@@ -283,7 +283,7 @@
       </div>
       <div class="stat-side">
         <div class="card mini gold"><span class="em">✨</span><div><b id="sNew">0</b><span>חדשות בשבילך</span></div></div>
-        <div class="card mini"><span class="em">🏆</span><div><b id="sTop" class="small">-</b><span>האתר שדיבר הכי הרבה היום</span></div></div>
+        <div class="card mini"><span class="em">🏆</span><div><b id="sTop" class="small">-</b><span>האתר שדיבר הכי הרבה על צה"ל ב-24 השעות האחרונות</span></div></div>
       </div>
     </div>
     <div class="warn" id="errors" hidden></div>
@@ -523,9 +523,10 @@ function renderNews() {
   const day = base.filter(m => m.ts >= now() - 86400);
   $("sDay").textContent = day.length;
   $("sNew").textContent = base.filter(m => m.found > lastSeen).length;
-  const per = {}; base.filter(m => dayLabel(m.ts) === "היום").forEach(m => per[m.source] = (per[m.source] || 0) + 1);
+  // last 24h, not "since midnight", so the card isn't empty right after midnight
+  const per = {}; day.forEach(m => per[m.source] = (per[m.source] || 0) + 1);
   const top = Object.entries(per).sort((a, b) => b[1] - a[1])[0];
-  $("sTop").textContent = top ? `${top[0]} · ${top[1]}` : "עוד אין";
+  $("sTop").textContent = top ? `${top[0]} · ${top[1]} כתבות` : "אין עדיין";
   const hours = Array(24).fill(0);
   day.forEach(m => { const i = 23 - Math.floor((now() - m.ts) / 3600); if (i >= 0 && i < 24) hours[i]++; });
   const max = Math.max(...hours, 1);
