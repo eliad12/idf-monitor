@@ -3,7 +3,7 @@
 # Run: python idf_monitor.py   then open http://localhost:8000
 # One scan for static hosting (GitHub Actions): DATA_PASSWORD=... python idf_monitor.py --once  (needs: pip install cryptography)
 # Self-check: python idf_monitor.py --selftest
-import html, json, os, re, sys, threading, time, urllib.parse, urllib.request, webbrowser
+import html, json, os, re, sys, threading, time, urllib.error, urllib.parse, urllib.request, webbrowser
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -185,6 +185,7 @@ def snapshot(live, refresh=None):
             "sources": [{"name": n, "group": g, "domain": d.split("/")[0]} for n, d, _, g in SOURCES],
             "telegram": [{"name": n, "channel": c} for n, c in TELEGRAM],
             "refresh": refresh,
+            "bot": bot or None,
         }, ensure_ascii=False).encode()
 
 
@@ -250,6 +251,101 @@ def tag_tones(now=None):
     return done
 
 
+# ---- Telegram alert bot (optional: runs only when TELEGRAM_BOT_TOKEN is set) ----
+# State lives inside the encrypted data: {"username", "code", "chats", "offset", "primed"}.
+# Joining needs "/start <code>"; the code is only in the encrypted data, so only password holders can subscribe.
+ALERT_MAX_AGE = 12 * 3600   # don't alert on old articles a scan happens to surface
+ALERT_LIST = 10             # headlines per alert message; the rest is a count + app link
+bot = {}
+
+
+def tg(token, method, **params):
+    body = urllib.parse.urlencode({k: json.dumps(v) if isinstance(v, (list, dict, bool)) else v
+                                   for k, v in params.items()}).encode()
+    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/{method}", data=body)
+    with urllib.request.urlopen(req, timeout=20) as r:
+        out = json.loads(r.read())
+    if not out.get("ok"):
+        raise RuntimeError(f"telegram {method} not ok")
+    return out["result"]
+
+
+def quiet_hours(now):
+    from datetime import datetime, timedelta, timezone
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Asia/Jerusalem")
+    except Exception:  # shortcut: no tz database (Windows); winter offset is off by an hour in summer
+        tz = timezone(timedelta(hours=2))
+    h = datetime.fromtimestamp(now, tz).hour
+    return h >= 23 or h < 7
+
+
+def alert_text(items, app_url):
+    esc = html.escape
+    n = len(items)
+    lines = [f"🔔 <b>{'כתבה חדשה' if n == 1 else f'{n} כתבות חדשות'} על צה\"ל</b>", ""]
+    for m in items[:ALERT_LIST]:
+        title = m["title"].split("\n")[0]
+        title = title if len(title) <= 160 else title[:159] + "…"
+        lines.append(f"• <b>{esc(m['source'])}</b>: <a href=\"{esc(m['link'], quote=True)}\">{esc(title)}</a>")
+    if n > ALERT_LIST:
+        lines.append(f"\nועוד {n - ALERT_LIST} כתבות באפליקציה")
+    lines.append(f"\n<a href=\"{esc(app_url, quote=True)}\">פתחי את הניטור ←</a>")
+    return "\n".join(lines)
+
+
+def bot_inbox(token):
+    """Handle /start <code> and /stop messages since the last scan."""
+    if not bot.get("username"):
+        bot["username"] = tg(token, "getMe")["username"]
+    if not bot.get("code"):
+        import secrets
+        bot["code"] = secrets.token_urlsafe(9)
+    bot.setdefault("chats", [])
+    for u in tg(token, "getUpdates", offset=bot.get("offset", 0), timeout=0, allowed_updates=["message"]):
+        bot["offset"] = u["update_id"] + 1
+        msg = u.get("message") or {}
+        chat, text = (msg.get("chat") or {}).get("id"), (msg.get("text") or "").strip()
+        if not chat:
+            continue
+        if text == f"/start {bot['code']}":
+            if chat not in bot["chats"]:
+                bot["chats"].append(chat)
+            reply = ("היי מיכלי 👋\nמעכשיו תקבלי כאן התראה על כל כתבה חדשה שמזכירה את צה\"ל בכותרת.\n"
+                     "בלילה (23:00–07:00) ההתראות מגיעות בשקט, בלי צלצול.\nכדי להפסיק, שלחי /stop")
+        elif text == "/stop":
+            bot["chats"] = [c for c in bot["chats"] if c != chat]
+            reply = "ההתראות הופסקו. אפשר להצטרף שוב מההגדרות באפליקציה."
+        else:
+            reply = "זה בוט פרטי. כדי לקבל התראות, פתחי את האפליקציה ← ⚙️ הגדרות ← התראות בטלגרם."
+        tg(token, "sendMessage", chat_id=chat, text=reply)
+
+
+def send_alerts(token, app_url, now=None):
+    """Sends one digest per scan of headline hits not alerted yet; returns how many were included."""
+    now = now or time.time()
+    with lock:
+        fresh = [m for m in mentions.values() if m.get("hit") and m.get("kind") != "telegram" and not m.get("alerted")]
+        for m in fresh:
+            m["alerted"] = True
+    if not bot.get("primed"):  # first run with a bot: everything already collected counts as seen
+        bot["primed"] = True
+        return 0
+    fresh = sorted((m for m in fresh if now - m["ts"] < ALERT_MAX_AGE), key=lambda m: -m["ts"])
+    if not fresh or not bot.get("chats"):
+        return 0
+    text, silent = alert_text(fresh, app_url), quiet_hours(now)
+    for chat in list(bot["chats"]):
+        try:
+            tg(token, "sendMessage", chat_id=chat, text=text, parse_mode="HTML",
+               disable_web_page_preview=True, disable_notification=silent)
+        except urllib.error.HTTPError as e:
+            if e.code == 403:  # she blocked the bot: stop sending there
+                bot["chats"].remove(chat)
+    return len(fresh)
+
+
 # Hosted copy: data.enc = AES-256-GCM, key = PBKDF2-SHA256(password, salt). The page decrypts it with WebCrypto.
 ENC = HERE / "data.enc"
 KDF_ITERS = 300_000
@@ -303,10 +399,10 @@ def selftest():
     assert it["title"] == "Soldiers hurt in Gaza" and it["link"] == "https://x/1" and it["ts"] > 0
     assert "site%3Aynet.co.il" in feed_url("ynet.co.il", HE)
     assert TITLE_HIT.search('צה"ל תקף') and TITLE_HIT.search("IDF says") and not TITLE_HIT.search("Trump pardons turkeys")
-    tg = ('<div data-post="idf_telegram/55"><div class="tgme_widget_message_text js-message_text">'
+    tg_page = ('<div data-post="idf_telegram/55"><div class="tgme_widget_message_text js-message_text">'
           'שורה&quot;1<br/><b>שורה 2</b></div><time datetime="2026-11-24T10:00:00+00:00"></time></div>'
           '<div data-post="idf_telegram/56"><time datetime="2026-11-24T11:00:00+00:00"></time></div>')
-    [t] = parse_telegram(tg, "TG", "idf_telegram")
+    [t] = parse_telegram(tg_page, "TG", "idf_telegram")
     assert t["title"] == 'שורה"1\nשורה 2' and t["link"] == "https://t.me/idf_telegram/55" and t["kind"] == "telegram"
     saved_state = dict(mentions)
     mentions.clear()
@@ -320,6 +416,25 @@ def selftest():
     chunk = [{"title": "a"}, {"title": "b"}]
     apply_tones(chunk, '{"items": [{"i": 0, "tone": "critical"}, {"i": 5, "tone": "neutral"}, {"i": 1, "tone": "bogus"}]}')
     assert chunk == [{"title": "a", "tone": "critical"}, {"title": "b"}], chunk
+    # alerts: first run only primes; later runs send fresh hits, oldest/known ones never
+    saved_state = dict(mentions)
+    mentions.clear()
+    sent = []
+    global tg
+    real_tg, tg = tg, lambda token, method, **p: sent.append((method, p))
+    try:
+        bot.clear(); bot.update({"chats": [42]})
+        t0 = 1_000_000
+        mentions.update({"a": {"link": "a", "title": "A", "source": "S", "ts": t0, "hit": True, "found": t0}})
+        assert send_alerts("tok", "https://x/", now=t0) == 0 and bot["primed"] and not sent
+        mentions.update({"b": {"link": "b", "title": "<B&>", "source": "S", "ts": t0, "hit": True, "found": t0},
+                         "old": {"link": "old", "title": "Old", "source": "S", "ts": t0 - 2 * ALERT_MAX_AGE, "hit": True, "found": t0}})
+        assert send_alerts("tok", "https://x/", now=t0 + 60) == 1
+        assert len(sent) == 1 and "&lt;B&amp;&gt;" in sent[0][1]["text"] and "Old" not in sent[0][1]["text"]
+        assert send_alerts("tok", "https://x/", now=t0 + 120) == 0 and len(sent) == 1
+    finally:
+        tg = real_tg
+        bot.clear(); mentions.clear(); mentions.update(saved_state)
     blob = encrypt("שלום".encode(), "pw", b"s" * 16)
     assert decrypt(blob, "pw") == ("שלום".encode(), b"s" * 16) and "שלום".encode() not in blob
     try:
@@ -343,8 +458,10 @@ if __name__ == "__main__":
         if ENC.exists():
             try:
                 plain, salt = decrypt(ENC.read_bytes(), password)
+                prev = json.loads(plain)
                 mentions.clear()
-                mentions.update({m["link"]: m for m in json.loads(plain)["items"]})
+                mentions.update({m["link"]: m for m in prev["items"]})
+                bot.update(prev.get("bot") or {})
             except Exception:  # password changed: start a fresh history (old data is unreadable anyway)
                 print("could not decrypt previous data, starting fresh")
                 salt = os.urandom(16)
@@ -354,6 +471,14 @@ if __name__ == "__main__":
         status["errors"] = tg_errors + status["errors"]
         print(f"tones added: {tag_tones()}")
         token, repo = os.environ.get("DISPATCH_TOKEN", ""), os.environ.get("GITHUB_REPOSITORY", "")
+        bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+        if bot_token:
+            owner, _, name = repo.partition("/")
+            try:  # alerts must never break the scan; log the error type only (Actions logs are public)
+                bot_inbox(bot_token)
+                print(f"alerted: {send_alerts(bot_token, f'https://{owner}.github.io/{name}/')}, subscribers: {len(bot.get('chats', []))}")
+            except Exception as e:
+                print(f"telegram bot error: {type(e).__name__}")
         refresh = {"token": token, "repo": repo, "workflow": "poll.yml"} if token and repo else None
         ENC.write_bytes(encrypt(snapshot(live=False, refresh=refresh), password, salt))
         DB.unlink(missing_ok=True)  # never leave plaintext state where it could be committed

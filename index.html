@@ -454,6 +454,7 @@
   <div class="sheet" role="dialog" aria-label="הגדרות">
     <div class="grab"></div>
     <h3>הגדרות</h3>
+    <div class="row" id="botRow" hidden><div>✈️ התראות בטלגרם<small>הודעה בטלגרם על כל כתבה חדשה, גם כשהאפליקציה סגורה</small></div><a class="ghost" id="botJoin" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">הצטרפות</a></div>
     <div class="row"><div>🔔 התראות על כתבות חדשות<small id="notifyHint">התראה כשהאפליקציה פתוחה ונמצאת כתבה חדשה</small></div><button class="switch" id="notifySwitch" role="switch" aria-checked="false" aria-label="התראות"></button></div>
     <div class="row"><div>🌙 מצב תצוגה</div>
       <div class="seg" id="themeSeg" style="width:210px"><button data-v="auto">אוטומטי</button><button data-v="light">בהיר</button><button data-v="dark">כהה</button></div></div>
@@ -855,6 +856,9 @@ function renderHeader() {
   $("errors").hidden = !errs.length;
   $("errors").textContent = errs.length ? `⚠️ ${errs.length === 1 ? "אתר אחד לא נטען" : `${errs.length} אתרים לא נטענו`} בבדיקה האחרונה: ${errs.map(e => e.split(":")[0]).join(", ")}. ננסה שוב בבדיקה הבאה.` : "";
   $("refreshBtn").hidden = !(s.live || (data.refresh && data.refresh.token));
+  const b = data.bot;  // Telegram alert bot: the join code only exists inside the encrypted data
+  $("botRow").hidden = !(b && b.username && b.code);
+  if (b && b.username && b.code) $("botJoin").href = `https://t.me/${b.username}?start=${encodeURIComponent(b.code)}`;
   $("refreshBtn").classList.toggle("spinning", refreshing);
   $("autoHint").textContent = s.live ? "בדיקה כל 10 דקות, וטלגרם כל 2 דקות" : "בדיקה אוטומטית בערך כל 10–30 דקות" + (data.refresh && data.refresh.token ? ", ועוד בכל לחיצה על כפתור הרענון למעלה" : "");
 }

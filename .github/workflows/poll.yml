@@ -29,6 +29,7 @@ jobs:
           NEWS_WINDOW: ${{ inputs.window || '2d' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: tone tagging
           TONE_MODEL: ${{ vars.TONE_MODEL }}                    # optional: defaults to claude-haiku-5-5
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }} # optional: alert bot
       - name: Save results (encrypted only)
         run: |
           git config user.name "github-actions[bot]"
