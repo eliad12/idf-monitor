@@ -20,14 +20,17 @@
   :root {
     --bg: #f3f4f0; --card: #ffffff; --card-2: #f7f8f5; --ink: #17211b; --muted: #66716a; --line: #e2e6df;
     --brand: #24382c; --brand-2: #3b6b50; --brand-soft: #e6efe8; --gold: #d9a521; --gold-soft: #fbf1d6;
-    --il: #2563a8; --world: #7a42a6; --tg: #1f8fd0; --live: #e5484d;
+    --il: #2563a8; --world: #7a42a6; --arab: #0f7a6e; --tg: #1f8fd0; --live: #e5484d;
+    /* tone: diverging red <-> blue with a gray midpoint (validated with the dataviz palette checker) */
+    --tone-critical: #d6534f; --tone-neutral: #b3b1aa; --tone-supportive: #2a78d6; --bar: #3b6b50;
     --shadow: 0 1px 2px rgba(20,30,25,.05), 0 4px 14px rgba(20,30,25,.06);
     --radius: 16px; --nav-h: 0px;
   }
   [data-theme=dark] {
     --bg: #0e1310; --card: #171f1a; --card-2: #1d2620; --ink: #e8eee9; --muted: #98a59c; --line: #27322b;
     --brand: #142019; --brand-2: #5fa37c; --brand-soft: #1f2d24; --gold: #e8b93a; --gold-soft: #3a3118;
-    --il: #6aa3e8; --world: #b48ae0; --tg: #4fb3ea; --shadow: 0 1px 2px rgba(0,0,0,.3);
+    --il: #6aa3e8; --world: #b48ae0; --arab: #4cc3b2; --tg: #4fb3ea; --shadow: 0 1px 2px rgba(0,0,0,.3);
+    --tone-critical: #e5615c; --tone-neutral: #4c504b; --tone-supportive: #4a93e8; --bar: #5fa37c;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { background: var(--bg); }
@@ -169,7 +172,45 @@
   .meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
   .fav { width: 20px; height: 20px; border-radius: 6px; background: var(--card-2); flex: none; object-fit: contain; }
   .src { font-weight: 700; color: var(--ink); }
-  .src.il { color: var(--il); } .src.world { color: var(--world); } .src.tg { color: var(--tg); }
+  .src.il { color: var(--il); } .src.world { color: var(--world); } .src.arab { color: var(--arab); } .src.tg { color: var(--tg); }
+  .tone { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .tone::before { content: ""; width: 9px; height: 9px; border-radius: 3px; background: var(--c); }
+
+  /* ---------- trends ---------- */
+  .chartcard { padding: 16px 18px; margin-bottom: 14px; }
+  .chartcard h3 { margin: 0; font-size: 17px; }
+  .chartcard .csub { color: var(--muted); font-size: 13.5px; margin: 2px 0 14px; }
+  .bignum { font-size: 30px; font-weight: 800; line-height: 1.1; }
+  .delta { font-size: 14px; font-weight: 700; color: var(--muted); margin-inline-start: 8px; }
+  .vbars { display: flex; align-items: flex-end; gap: 8px; height: 150px; border-bottom: 1px solid var(--line); }
+  .vcol { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; background: none; border: 0; padding: 0; cursor: pointer; }
+  .vcol .seg-stack { width: min(34px, 80%); display: flex; flex-direction: column-reverse; gap: 2px; }
+  .vcol .fill { width: 100%; border-radius: 0 0 0 0; background: var(--bar); min-height: 0; }
+  .vcol .seg-stack .fill:last-child { border-radius: 4px 4px 0 0; }
+  .vcol .prevmark { position: absolute; height: 0; width: min(42px, 92%); border-top: 2px dashed var(--muted); opacity: .7; }
+  .vcol[aria-pressed=true] .fill { filter: brightness(1.12); }
+  .vcol[aria-pressed=true]::after { content: ""; position: absolute; inset: 0 2px; background: var(--brand-soft); z-index: -1; border-radius: 8px; }
+  .vlabels { display: flex; gap: 8px; margin-top: 6px; }
+  .vlabels span { flex: 1; text-align: center; font-size: 12px; color: var(--muted); }
+  .vlabels span.today { color: var(--ink); font-weight: 700; }
+  .readout { margin-top: 10px; font-size: 14px; background: var(--card-2); border-radius: 10px; padding: 8px 12px; min-height: 2.6em; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px; margin: 0 0 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; background: var(--c); display: inline-block; }
+  .legend i.dash { height: 0; border-top: 2px dashed var(--muted); border-radius: 0; background: none; width: 16px; }
+  .hrow { display: grid; grid-template-columns: minmax(96px, 30%) 1fr auto; align-items: center; gap: 10px; padding: 6px 4px; border-radius: 10px; background: none; border: 0; width: 100%; text-align: start; cursor: pointer; }
+  .hrow:hover { background: var(--card-2); }
+  .hrow .name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hrow .name img { width: 18px; height: 18px; border-radius: 5px; flex: none; }
+  /* bar grows from the right baseline (RTL); only its far (left) end is rounded */
+  .hrow .track { height: 14px; }
+  .hrow .barw { height: 100%; display: flex; gap: 2px; border-radius: 4px 0 0 4px; overflow: hidden; min-width: 3px; }
+  .hrow .barw i { display: block; height: 100%; background: var(--bar); }
+  .hrow .num { font-size: 13.5px; font-weight: 700; min-width: 64px; text-align: end; white-space: nowrap; }
+  .hrow .num small { color: var(--muted); font-weight: 600; margin-inline-start: 4px; }
+  .report { width: 100%; min-height: 280px; max-height: 46vh; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--card-2); font: 14px/1.6 "Heebo", system-ui, sans-serif; white-space: pre-wrap; resize: vertical; }
+  .btnrow { display: flex; gap: 10px; margin-top: 12px; }
+  .btnrow .primary { margin-top: 0; }
   .tag { font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 99px; }
   .tag.new { background: var(--gold-soft); color: #8a6400; }
   [data-theme=dark] .tag.new { color: var(--gold); }
@@ -259,6 +300,7 @@
   <div class="nav-in">
     <button role="tab" data-tab="news" aria-selected="true"><span class="ico">📰</span><span>חדשות</span><span class="count" id="cNews">0</span></button>
     <button role="tab" data-tab="tg" aria-selected="false"><span class="ico">✈️</span><span>טלגרם צה"ל</span><span class="count" id="cTg">0</span></button>
+    <button role="tab" data-tab="trends" aria-selected="false"><span class="ico">📈</span><span>מגמות</span></button>
     <button role="tab" data-tab="saved" aria-selected="false"><span class="ico">⭐</span><span>שמורים</span><span class="count quiet" id="cSaved">0</span></button>
     <button role="tab" data-tab="social" aria-selected="false"><span class="ico">📱</span><span>רשתות</span></button>
   </div>
@@ -296,7 +338,7 @@
       <button class="filterbtn" id="filterBtn">סינון <span class="dot" id="filterDot" hidden>0</span></button>
     </div>
     <div class="chips" id="chips" aria-label="סינון לפי אתר"></div>
-    <div class="listhead"><span id="listCount"></span><button class="textbtn" id="markRead">✓ סמני הכל כנקרא</button></div>
+    <div class="listhead"><span id="listCount"></span><span><button class="textbtn" id="reportBtn">📋 סיכום לדיווח</button> <button class="textbtn" id="markRead">✓ סמני הכל כנקרא</button></span></div>
     <div id="newsList"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
   </section>
 
@@ -311,6 +353,41 @@
     </div>
     <div class="chips" id="tgChan"></div>
     <div id="tgList"></div>
+  </section>
+
+  <!-- ======= TRENDS ======= -->
+  <section id="tab-trends" role="tabpanel" hidden>
+    <div class="seg" id="trendGroup" style="margin-bottom:14px" aria-label="סוג אתר">
+      <button data-v="" aria-pressed="true">הכל</button><button data-v="il">ישראלים</button><button data-v="world">בעולם</button><button data-v="arab">ערבית</button>
+    </div>
+    <div class="card chartcard">
+      <h3>כתבות על צה"ל בשבוע האחרון</h3>
+      <div><span class="bignum" id="weekTotal">0</span><span class="delta" id="weekDelta"></span></div>
+      <p class="csub">כתבות שצה"ל מופיע בכותרת שלהן, לפי יום. לחצי על יום לפרטים.</p>
+      <div class="legend"><span><i style="--c:var(--bar)"></i>השבוע</span><span><i class="dash"></i>אותו יום בשבוע שעבר</span></div>
+      <div class="vbars" id="dayBars" role="group" aria-label="כתבות לפי יום"></div>
+      <div class="vlabels" id="dayLabels"></div>
+      <div class="readout" id="dayReadout" aria-live="polite"></div>
+    </div>
+    <div class="card chartcard">
+      <h3>מי דיבר הכי הרבה על צה"ל השבוע</h3>
+      <p class="csub">מספר הכתבות ב-7 הימים האחרונים, והשינוי לעומת 7 הימים שלפניהם. לחיצה על אתר מציגה את הכתבות שלו.</p>
+      <div id="srcBars"></div>
+      <button class="textbtn" id="srcMore" hidden>הצג את כל האתרים</button>
+    </div>
+    <div class="card chartcard" id="toneCard">
+      <h3>הטון של הסיקור השבוע</h3>
+      <p class="csub" id="toneSub">איך הכותרות מציגות את צה"ל, לפי סיווג אוטומטי של בינה מלאכותית.</p>
+      <div id="toneDetail">
+        <div class="legend" id="toneLegend"></div>
+        <div class="vbars" id="toneBars" role="group" aria-label="טון לפי יום"></div>
+        <div class="vlabels" id="toneLabels"></div>
+        <div class="readout" id="toneReadout" aria-live="polite"></div>
+        <h3 style="margin-top:20px;font-size:15px">טון לפי אתר</h3>
+        <p class="csub">האתרים עם הכי הרבה כתבות השבוע. כל פס מחולק לפי הטון.</p>
+        <div id="toneBySource"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ======= SAVED ======= -->
@@ -347,10 +424,27 @@
     <div class="seg" id="range"><button data-v="1">שעה</button><button data-v="24">24 שעות</button><button data-v="72">3 ימים</button><button data-v="168">שבוע</button><button data-v="0" aria-pressed="true">הכל</button></div>
     <p class="hint">"הכל" מציג את כל מה שנשמר: כתבות מהשבוע האחרון.</p>
     <h4>איזה אתרים</h4>
-    <div class="seg" id="group"><button data-v="" aria-pressed="true">הכל</button><button data-v="il">ישראלים</button><button data-v="world">בעולם</button></div>
+    <div class="seg" id="group"><button data-v="" aria-pressed="true">הכל</button><button data-v="il">ישראלים</button><button data-v="world">בעולם</button><button data-v="arab">ערבית</button></div>
+    <div id="toneFilterWrap" hidden>
+      <h4>טון</h4>
+      <div class="seg" id="toneFilter"><button data-v="" aria-pressed="true">הכל</button><button data-v="critical">ביקורתי</button><button data-v="neutral">עובדתי</button><button data-v="supportive">אוהד</button></div>
+    </div>
     <h4>עד כמה מדויק</h4>
     <label class="check"><input type="checkbox" id="weak"> להציג גם כתבות שצה"ל מוזכר רק בתוכן שלהן, ולא בכותרת</label>
     <button class="primary" data-close>הצגת התוצאות</button>
+  </div>
+</div>
+
+<!-- ======= report sheet ======= -->
+<div id="reportSheet" hidden>
+  <div class="scrim" data-close></div>
+  <div class="sheet" role="dialog" aria-label="סיכום לדיווח">
+    <div class="grab"></div>
+    <h3>📋 סיכום לדיווח</h3>
+    <div class="seg" id="reportRange"><button data-v="24" aria-pressed="true">24 השעות האחרונות</button><button data-v="168">השבוע האחרון</button></div>
+    <label class="check" style="margin:12px 0"><input type="checkbox" id="reportLinks"> לצרף קישורים לכתבות</label>
+    <textarea class="report" id="reportText" aria-label="טקסט הסיכום" spellcheck="false"></textarea>
+    <div class="btnrow"><button class="primary" id="reportShare">שיתוף</button><button class="ghost" id="reportCopy">העתקה</button></div>
   </div>
 </div>
 
@@ -375,7 +469,9 @@ const PAGE = 120;
 let data = { items: [], status: {}, sources: [], telegram: [], refresh: null };
 let lastSeen = +localStorage.lastSeen || 0;
 let maxFound = 0;
-const ui = { range: 0, group: "", source: "", tgChan: "", shown: PAGE, tgShown: PAGE };
+const ui = { range: 0, group: "", source: "", tone: "", tgChan: "", shown: PAGE, tgShown: PAGE, trendGroup: "", srcAll: false, day: 6, toneDay: 6, reportRange: 24 };
+// diverging order: critical, neutral, supportive
+const TONE = { critical: { he: "ביקורתי", c: "var(--tone-critical)", em: "🔴" }, neutral: { he: "עובדתי", c: "var(--tone-neutral)", em: "⚪" }, supportive: { he: "אוהד", c: "var(--tone-supportive)", em: "🔵" } };
 const groupOf = {}, domainOf = {};
 let saved = JSON.parse(localStorage.saved || "{}");   // link -> item
 
@@ -437,6 +533,7 @@ function itemCard(m) {
   meta.append(img, src, el("span", null, "·"), t);
   if (now() - m.ts < 3600) meta.append(el("span", "tag now", "עכשיו"));
   else if (m.found > lastSeen) meta.append(el("span", "tag new", "חדש"));
+  if (TONE[m.tone]) { const t = el("span", "tone", TONE[m.tone].he); t.style.setProperty("--c", TONE[m.tone].c); t.title = "הטון של הכותרת כלפי צה\"ל (סיווג אוטומטי)"; meta.append(t); }
   c.append(meta);
 
   if (tg) {
@@ -495,7 +592,8 @@ const newsBase = () => data.items.filter(m => m.kind !== "telegram" && (m.hit ||
 function renderNews() {
   const base = newsBase(), q = $("q").value.trim().toLowerCase();
   const since = ui.range ? now() - ui.range * 3600 : 0;
-  const inScope = base.filter(m => m.ts >= since && (!ui.group || groupOf[m.source] === ui.group) && (!q || m.title.toLowerCase().includes(q)));
+  const inScope = base.filter(m => m.ts >= since && (!ui.group || groupOf[m.source] === ui.group) && (!ui.tone || m.tone === ui.tone) && (!q || m.title.toLowerCase().includes(q)));
+  $("toneFilterWrap").hidden = !data.items.some(m => m.tone);
   const items = inScope.filter(m => !ui.source || m.source === ui.source);
 
   // source chips: one swipeable row, busiest first
@@ -512,7 +610,7 @@ function renderNews() {
     return c;
   }));
 
-  const nFilters = (ui.range ? 1 : 0) + (ui.group ? 1 : 0) + ($("weak").checked ? 1 : 0);
+  const nFilters = (ui.range ? 1 : 0) + (ui.group ? 1 : 0) + (ui.tone ? 1 : 0) + ($("weak").checked ? 1 : 0);
   $("filterDot").hidden = !nFilters; $("filterDot").textContent = nFilters;
   const rangeName = { 1: "בשעה האחרונה", 24: "ב-24 השעות האחרונות", 72: "ב-3 הימים האחרונים", 168: "בשבוע האחרון" }[ui.range] || "";
   $("listCount").textContent = items.length ? `${items.length} כתבות` + (ui.source ? ` מ${ui.source}` : "") + (rangeName ? ` ${rangeName}` : "") : "";
@@ -589,6 +687,159 @@ function loadSocial() {
   }), 9000);
 }
 
+// ---------- trends ----------
+const hits = () => data.items.filter(m => m.hit && m.kind !== "telegram");
+const DAY = 86400, WEEK = 7 * DAY, BAR_H = 140;
+function dayStart(daysAgo) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - daysAgo); return d.getTime() / 1000; }
+const countBy = (arr, key) => arr.reduce((a, m) => (a[key(m)] = (a[key(m)] || 0) + 1, a), {});
+const oldestTs = arr => arr.reduce((t, m) => Math.min(t, m.ts), Infinity);
+function hasHistory(arr, since) { return oldestTs(arr) <= since + DAY; }   // data reaches back to `since` (within a day)
+function deltaText(cur, prev) {
+  if (!prev) return cur ? "חדש" : "";
+  const d = cur - prev; return d === 0 ? "ללא שינוי" : `${d > 0 ? "▲" : "▼"} ${Math.abs(d)}`;
+}
+function goToSource(name) {
+  ui.source = name; ui.range = 168; ui.group = ""; ui.shown = PAGE;
+  $("range").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === "168"));
+  $("group").querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === 0));
+  showTab("news"); renderNews();
+}
+function vColumn(segments, max, pressed, label, ghost) {
+  const col = el("button", "vcol"); col.setAttribute("aria-pressed", pressed); col.setAttribute("aria-label", label);
+  const stack = el("div", "seg-stack");
+  segments.forEach(([n, color]) => { if (!n) return; const f = el("i", "fill"); f.style.height = (n / max * BAR_H) + "px"; if (color) f.style.background = color; stack.append(f); });
+  col.append(stack);
+  if (ghost != null) { const g = el("i", "prevmark"); g.style.bottom = (ghost / max * BAR_H) + "px"; col.append(g); }
+  return col;
+}
+function dayLabelsRow(id, days) {
+  $(id).replaceChildren(...days.map((d, i) => el("span", i === 6 ? "today" : "", i === 6 ? "היום" : new Date(d * 1000).toLocaleDateString("he-IL", { weekday: "short" }))));
+}
+function renderTrends() {
+  const all = hits().filter(m => !ui.trendGroup || groupOf[m.source] === ui.trendGroup);
+  const starts = [...Array(7)].map((_, i) => dayStart(6 - i));             // index 6 = today
+  const inDay = (m, s) => m.ts >= s && m.ts < s + DAY;
+  const cur = starts.map(s => all.filter(m => inDay(m, s)));
+  const prev = starts.map(s => all.filter(m => inDay(m, s - WEEK)));
+  const curAll = cur.flat(), prevAll = prev.flat();
+  const withPrev = hasHistory(all, starts[0] - WEEK);
+
+  // --- volume by day ---
+  $("weekTotal").textContent = `${curAll.length} כתבות`;
+  if (withPrev && prevAll.length) {
+    const pct = Math.round((curAll.length - prevAll.length) / prevAll.length * 100);
+    $("weekDelta").textContent = `${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}% לעומת השבוע הקודם (${prevAll.length})`;
+  } else $("weekDelta").textContent = "ההשוואה לשבוע הקודם תופיע כשיצטברו שבועיים של נתונים";
+  const max = Math.max(1, ...cur.map(d => d.length), ...(withPrev ? prev.map(d => d.length) : []));
+  $("dayBars").replaceChildren(...cur.map((d, i) => {
+    const label = new Date(starts[i] * 1000).toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "numeric" });
+    const col = vColumn([[d.length]], max, ui.day === i, `${label}: ${d.length} כתבות`, withPrev ? prev[i].length : null);
+    col.onclick = () => { ui.day = i; renderTrends(); };
+    return col;
+  }));
+  dayLabelsRow("dayLabels", starts);
+  const sel = cur[ui.day], top3 = Object.entries(countBy(sel, m => m.source)).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  $("dayReadout").textContent = `${new Date(starts[ui.day] * 1000).toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}: ${sel.length} כתבות`
+    + (withPrev ? ` · בשבוע שעבר: ${prev[ui.day].length}` : "")
+    + (top3.length ? ` · הכי הרבה: ${top3.map(([s, n]) => `${s} (${n})`).join(", ")}` : "");
+
+  // --- by source ---
+  const cs = countBy(curAll, m => m.source), ps = countBy(prevAll, m => m.source);
+  const ranked = Object.entries(cs).sort((a, b) => b[1] - a[1]);
+  const smax = ranked.length ? ranked[0][1] : 1;
+  const shown = ui.srcAll ? ranked : ranked.slice(0, 10);
+  $("srcBars").replaceChildren(...(shown.length ? shown.map(([name, n]) => {
+    const row = el("button", "hrow"); row.setAttribute("aria-label", `${name}: ${n} כתבות השבוע`);
+    const nm = el("span", "name"); const img = el("img"); img.alt = ""; img.src = favicon(domainOf[name]); img.onerror = () => img.remove();
+    nm.append(img, el("span", null, name));
+    const track = el("span", "track"), bw = el("span", "barw"), fill = el("i"); fill.style.width = "100%";
+    bw.style.width = (n / smax * 100) + "%"; bw.append(fill); track.append(bw);
+    const num = el("span", "num", n); if (withPrev) num.append(el("small", null, deltaText(n, ps[name] || 0)));
+    row.append(nm, track, num); row.onclick = () => goToSource(name);
+    return row;
+  }) : empty("📭", "אין עדיין נתונים לשבוע הזה", "")));
+  $("srcMore").hidden = ranked.length <= 10;
+  $("srcMore").textContent = ui.srcAll ? "הצג פחות" : `הצג את כל ${ranked.length} האתרים`;
+
+  // --- tone ---
+  const toned = curAll.filter(m => TONE[m.tone]);
+  const hasTone = data.items.some(m => m.tone);
+  $("toneDetail").hidden = !hasTone;
+  if (!hasTone) {
+    $("toneSub").textContent = "סיווג הטון (ביקורתי / עובדתי / אוהד) יופיע כאן אחרי שיחובר מפתח ה-API של Claude ב-GitHub.";
+    return;
+  }
+  const untagged = curAll.length - toned.length;
+  $("toneSub").textContent = "איך הכותרות מציגות את צה\"ל, לפי סיווג אוטומטי של Claude." + (untagged ? ` ${untagged} כתבות עוד מחכות לסיווג.` : "");
+  const tc = countBy(toned, m => m.tone);
+  $("toneLegend").replaceChildren(...Object.entries(TONE).map(([k, t]) => {
+    const s = el("span"), i = el("i"); i.style.setProperty("--c", t.c);
+    s.append(i, `${t.he} ${toned.length ? Math.round((tc[k] || 0) / toned.length * 100) : 0}% (${tc[k] || 0})`); return s;
+  }));
+  const tdays = cur.map(d => d.filter(m => TONE[m.tone]));
+  const tmax = Math.max(1, ...tdays.map(d => d.length));
+  $("toneBars").replaceChildren(...tdays.map((d, i) => {
+    const c = countBy(d, m => m.tone);
+    const col = vColumn(Object.keys(TONE).map(k => [c[k] || 0, TONE[k].c]), tmax, ui.toneDay === i,
+      Object.keys(TONE).map(k => `${TONE[k].he} ${c[k] || 0}`).join(", "), null);
+    col.onclick = () => { ui.toneDay = i; renderTrends(); };
+    return col;
+  }));
+  dayLabelsRow("toneLabels", starts);
+  const tsel = countBy(tdays[ui.toneDay], m => m.tone);
+  $("toneReadout").textContent = `${new Date(starts[ui.toneDay] * 1000).toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}: `
+    + Object.keys(TONE).map(k => `${TONE[k].em} ${TONE[k].he} ${tsel[k] || 0}`).join(" · ");
+  const bySrc = Object.entries(countBy(toned, m => m.source)).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  $("toneBySource").replaceChildren(...bySrc.map(([name, n]) => {
+    const c = countBy(toned.filter(m => m.source === name), m => m.tone);
+    const row = el("button", "hrow"); row.onclick = () => goToSource(name);
+    row.setAttribute("aria-label", `${name}: ` + Object.keys(TONE).map(k => `${TONE[k].he} ${c[k] || 0}`).join(", "));
+    const nm = el("span", "name", name), track = el("span", "track"), bw = el("span", "barw"); bw.style.width = "100%";
+    Object.keys(TONE).forEach(k => { if (!c[k]) return; const f = el("i"); f.style.width = (c[k] / n * 100) + "%"; f.style.background = TONE[k].c; bw.append(f); });
+    track.append(bw);
+    row.append(nm, track, el("span", "num", `${Math.round((c.critical || 0) / n * 100)}% ביקורתי`));
+    return row;
+  }));
+}
+$("srcMore").onclick = () => { ui.srcAll = !ui.srcAll; renderTrends(); };
+
+// ---------- report for the shift summary ----------
+function buildReport() {
+  const hrs = ui.reportRange, since = now() - hrs * 3600, all = hits();
+  const items = all.filter(m => m.ts >= since).sort((a, b) => b.ts - a.ts);
+  const prevN = all.filter(m => m.ts >= since - hrs * 3600 && m.ts < since).length;
+  const tg = data.items.filter(m => m.kind === "telegram" && m.ts >= since);
+  const links = $("reportLinks").checked;
+  const top = (arr, n) => Object.entries(countBy(arr, m => m.source)).sort((a, b) => b[1] - a[1]).slice(0, n).map(([s, c]) => `${s} (${c})`).join(", ");
+  const short = t => { t = t.split("\n")[0]; return t.length > 140 ? t.slice(0, 139).trimEnd() + "…" : t; };
+  const line = m => `• ${m.source}: ${short(m.title)}` + (links ? `\n   ${m.link}` : "");
+  const when = new Date().toLocaleString("he-IL", { weekday: "long", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+  const L = [`📊 סיכום אזכורי צה"ל | ${when}`, `טווח: ${hrs === 24 ? "24 השעות האחרונות" : "7 הימים האחרונים"}`, ""];
+  let head = `📰 ${items.length} כתבות שצה"ל בכותרת שלהן`;
+  if (hasHistory(all, since - hrs * 3600)) head += ` (${items.length >= prevN ? "▲" : "▼"} ${Math.abs(items.length - prevN)} לעומת ${hrs === 24 ? "היממה הקודמת" : "השבוע הקודם"})`;
+  L.push(head);
+  const toned = items.filter(m => TONE[m.tone]);
+  if (toned.length) { const c = countBy(toned, m => m.tone); L.push("טון: " + Object.keys(TONE).map(k => `${TONE[k].em} ${TONE[k].he} ${c[k] || 0}`).join(" · ")); }
+  const il = items.filter(m => groupOf[m.source] === "il"), foreign = items.filter(m => groupOf[m.source] !== "il");
+  if (il.length) L.push(`🇮🇱 בתקשורת הישראלית: ${top(il, 5)}`);
+  if (foreign.length) L.push(`🌍 בתקשורת הזרה: ${top(foreign, 5)}`);
+  if (tg.length) L.push(`✈️ ${tg.length} הודעות בערוצי הטלגרם של צה"ל`);
+  const critical = items.filter(m => m.tone === "critical").slice(0, 5);
+  if (critical.length) L.push("", "🔴 כותרות ביקורתיות:", ...critical.map(line));
+  const seen = new Set(), latest = items.filter(m => !seen.has(m.source) && seen.add(m.source)).slice(0, 8);
+  if (latest.length) L.push("", "🗞️ כותרות אחרונות:", ...latest.map(line));
+  if (!items.length) L.push("", "לא נמצאו כתבות בטווח הזה.");
+  return L.join("\n");
+}
+$("reportBtn").onclick = () => { $("reportText").value = buildReport(); openSheet("reportSheet"); };
+$("reportLinks").onchange = () => { $("reportText").value = buildReport(); };
+$("reportCopy").onclick = async () => { await navigator.clipboard.writeText($("reportText").value); toast("הסיכום הועתק, אפשר להדביק 📋"); };
+$("reportShare").onclick = async () => {
+  if (navigator.share) { try { await navigator.share({ text: $("reportText").value }); } catch { } return; }
+  await navigator.clipboard.writeText($("reportText").value); toast("הסיכום הועתק, אפשר להדביק 📋");
+};
+if (!navigator.share) $("reportShare").hidden = true;  // desktop: copying is the only option
+
 // ---------- header + counters ----------
 function renderHeader() {
   $("greet").textContent = greeting();
@@ -611,24 +862,26 @@ function setCount(id, fresh, total) {
   const c = $(id); c.textContent = fresh || total; c.classList.toggle("hot", fresh > 0); c.classList.toggle("quiet", !fresh);
   c.title = fresh ? "חדשות" : "סה\"כ";
 }
-function renderAll() { renderHeader(); renderNews(); renderTg(); renderSaved(); }
+function renderAll() { renderHeader(); renderNews(); renderTg(); renderSaved(); if (!$("tab-trends").hidden) renderTrends(); }
 
 // ---------- tabs ----------
 function showTab(name) {
   document.querySelectorAll(".nav button").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
-  ["news", "tg", "saved", "social"].forEach(n => $("tab-" + n).hidden = n !== name);
+  ["news", "tg", "trends", "saved", "social"].forEach(n => $("tab-" + n).hidden = n !== name);
   if (name === "social") loadSocial();
+  if (name === "trends") renderTrends();
   if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name);
   scrollTo({ top: 0 });
 }
 document.querySelectorAll(".nav button").forEach(t => t.onclick = () => showTab(t.dataset.tab));
-const tabFromHash = () => showTab(["news", "tg", "saved", "social"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "news");
+const tabFromHash = () => showTab(["news", "tg", "trends", "saved", "social"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "news");
 window.onhashchange = tabFromHash;
 
 // ---------- sheets ----------
 function openSheet(id) { $(id).hidden = false; }
-document.querySelectorAll("#filterSheet [data-close], #settingsSheet [data-close]").forEach(b => b.onclick = () => b.closest("#filterSheet, #settingsSheet").hidden = true);
-document.addEventListener("keydown", e => { if (e.key === "Escape") ["filterSheet", "settingsSheet"].forEach(id => $(id).hidden = true); });
+const SHEETS = ["filterSheet", "settingsSheet", "reportSheet"];
+document.querySelectorAll(SHEETS.map(s => `#${s} [data-close]`).join(",")).forEach(b => b.onclick = () => b.closest(SHEETS.map(s => "#" + s).join(",")).hidden = true);
+document.addEventListener("keydown", e => { if (e.key === "Escape") SHEETS.forEach(id => $(id).hidden = true); });
 $("filterBtn").onclick = () => openSheet("filterSheet");
 $("settingsBtn").onclick = () => { syncNotifySwitch(); openSheet("settingsSheet"); };
 function seg(id, onPick) {
@@ -641,10 +894,13 @@ function seg(id, onPick) {
 seg("range", v => { ui.range = +v; ui.shown = PAGE; renderNews(); });
 seg("group", v => { ui.group = v; ui.source = ""; ui.shown = PAGE; renderNews(); });
 seg("themeSeg", v => { localStorage.theme = v; applyTheme(); });
+seg("toneFilter", v => { ui.tone = v; ui.shown = PAGE; renderNews(); });
+seg("trendGroup", v => { ui.trendGroup = v; renderTrends(); });
+seg("reportRange", v => { ui.reportRange = +v; $("reportText").value = buildReport(); });
 $("resetFilters").onclick = () => {
-  ui.range = 0; ui.group = ""; ui.source = ""; $("weak").checked = false;
+  ui.range = 0; ui.group = ""; ui.source = ""; ui.tone = ""; $("weak").checked = false;
   $("range").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === "0"));
-  $("group").querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === 0));
+  ["group", "toneFilter"].forEach(id => $(id).querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === 0)));
   renderAll();
 };
 $("weak").onchange = renderAll;

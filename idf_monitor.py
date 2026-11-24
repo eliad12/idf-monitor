@@ -21,6 +21,7 @@ HE = ('צה"ל OR "דובר צה"ל" OR חיילי', "he", "IL", "IL:he")
 EN = ('IDF OR "Israel Defense Forces" OR "Israeli military" OR "Israeli army"', "en", "US", "US:en")
 FR = ('Tsahal OR "armée israélienne"', "fr", "FR", "FR:fr")
 ES = ('"ejército israelí" OR "Ejército de Israel"', "es", "ES", "ES:es")
+AR = ('"الجيش الإسرائيلي" OR "جيش الاحتلال" OR "الجيش الاسرائيلي" OR أدرعي', "ar", "AE", "AE:ar")
 
 # Searched through Google News: (display name, domain, language, group)
 SOURCES = [
@@ -38,6 +39,7 @@ SOURCES = [
     ("WSJ", "wsj.com", EN, "world"), ("BBC", "bbc.com", EN, "world"), ("The Guardian", "theguardian.com", EN, "world"),
     ("WP", "washingtonpost.com", EN, "world"), ("Al Arabiya English", "english.alarabiya.net", EN, "world"),
     ("Le Monde", "lemonde.fr", FR, "world"), ("El Mundo", "elmundo.es", ES, "world"),
+    ("الجزيرة", "aljazeera.net", AR, "arab"), ("العربية", "www.alarabiya.net", AR, "arab"),
 ]
 # The site's own RSS, for outlets Google News covers poorly. Only items whose title names the IDF are kept.
 DIRECT_FEEDS = [
@@ -51,7 +53,8 @@ TELEGRAM = [("טלגרם צה\"ל (עברית)", "idf_telegram"), ("Telegram IDF
 TITLE_HIT = re.compile(
     r'צה["״]?ל|חייל|לוחמ|רמטכ["״]ל|דובר צה|קצין|תא["״]ל|סא["״]ל|פיקוד|חטיבת|גדוד|'
     r'\bIDF\b|Israel Defense|Israeli (military|army|forces|troops|soldiers?|strikes?|airstrikes?)|'
-    r'Tsahal|armée israélienne|ej[eé]rcito (israel[ií]|de Israel)', re.I)
+    r'Tsahal|armée israélienne|ej[eé]rcito (israel[ií]|de Israel)|'
+    r'الجيش الإسرائيلي|الجيش الاسرائيلي|جيش الاحتلال|قوات الاحتلال|أدرعي|أفيخاي|متحدث\w* (باسم )?الجيش|جندي|جنود', re.I)
 
 lock = threading.Lock()
 mentions = json.loads(DB.read_text("utf-8")) if DB.exists() else {}
@@ -107,7 +110,7 @@ def store(items):
             mentions.setdefault(it["link"], it)  # keep the first "found" time
 
 
-KEEP_DAYS = 8       # headline hits + Telegram: the app's "week" filter needs 7
+KEEP_DAYS = 15      # headline hits + Telegram: "this week vs last week" in the trends tab needs 14
 KEEP_WEAK_DAYS = 3  # body-only matches are noisy and ~4x as many; keep them short
 MAX_ITEMS = 6000    # shortcut: hard cap on the published file size, move to SQLite if she needs long history
 
@@ -185,6 +188,66 @@ def snapshot(live, refresh=None):
         }, ensure_ascii=False).encode()
 
 
+# ---- tone tagging with Claude (optional: runs only when ANTHROPIC_API_KEY is set) ----
+TONES = ("supportive", "critical", "neutral")
+TONE_BATCH = 60          # headlines per request
+TONE_MAX_PER_RUN = 240   # cost cap per scan; a backlog is worked off over a few scans
+TONE_MIN_BATCH = 10      # wait for this many new headlines...
+TONE_MAX_WAIT = 3600     # ...or until the oldest untagged one is an hour old (keeps it to ~1 request/hour)
+TONE_PROMPT = """You classify news headlines by how they portray the Israel Defense Forces (IDF), for the IDF Spokesperson's media monitoring.
+For each numbered headline, return its tone toward the IDF:
+- supportive: portrays the IDF favorably (achievements, successful operations, heroism, humanitarian help, praise).
+- critical: portrays the IDF unfavorably (criticism, allegations, failures, investigations, harm to civilians attributed to the IDF, internal problems).
+- neutral: factual reporting without a clear slant, or the IDF is only incidental to the story.
+Judge the headline's framing, not your own view of the events. Headlines may be in Hebrew, English, Arabic, French or Spanish.
+Return exactly one entry per headline, using its number."""
+TONE_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["items"], "properties": {
+    "items": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["i", "tone"],
+              "properties": {"i": {"type": "integer"}, "tone": {"type": "string", "enum": list(TONES)}}}}}}
+
+
+def apply_tones(chunk, reply):
+    for r in json.loads(reply)["items"]:
+        if 0 <= r["i"] < len(chunk) and r["tone"] in TONES:
+            chunk[r["i"]]["tone"] = r["tone"]
+
+
+def tag_tones(now=None):
+    """Tags untagged headline hits; returns how many got a tone. Never prints headlines (Actions logs are public)."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return 0
+    now = now or time.time()
+    with lock:
+        todo = sorted((m for m in mentions.values() if m.get("hit") and m.get("kind") != "telegram" and "tone" not in m),
+                      key=lambda m: -m["ts"])
+    if not todo or (len(todo) < TONE_MIN_BATCH and now - min(m["found"] for m in todo) < TONE_MAX_WAIT):
+        return 0
+    import anthropic
+    client = anthropic.Anthropic()
+    model = os.environ.get("TONE_MODEL") or "claude-opus-5-5"
+    done = 0
+    todo = todo[:TONE_MAX_PER_RUN]
+    for start in range(0, len(todo), TONE_BATCH):
+        chunk = todo[start:start + TONE_BATCH]
+        lines = "\n".join(f"{i}. [{m['source']}] {m['title']}" for i, m in enumerate(chunk))
+        try:
+            resp = client.beta.messages.create(
+                model=model, max_tokens=8000, system=TONE_PROMPT,
+                output_config={"effort": "low", "format": {"type": "json_schema", "schema": TONE_SCHEMA}},
+                betas=["server-side-fallback-2026-07-01"], fallbacks="default",  # retry a policy decline on another model
+                messages=[{"role": "user", "content": lines}])
+        except anthropic.APIError as e:
+            print(f"tone tagging stopped: {type(e).__name__}")
+            break
+        if resp.stop_reason != "end_turn":  # refusal / max_tokens: leave these untagged, try next scan
+            print(f"tone batch skipped: {resp.stop_reason}")
+            continue
+        with lock:
+            apply_tones(chunk, next(b.text for b in resp.content if b.type == "text"))
+        done += sum("tone" in m for m in chunk)
+    return done
+
+
 # Hosted copy: data.enc = AES-256-GCM, key = PBKDF2-SHA256(password, salt). The page decrypts it with WebCrypto.
 ENC = HERE / "data.enc"
 KDF_ITERS = 300_000
@@ -246,12 +309,15 @@ def selftest():
     saved_state = dict(mentions)
     mentions.clear()
     day = 86400
-    mentions.update({"hit7": {"ts": 1000 * day - 7 * day, "hit": True}, "hit9": {"ts": 1000 * day - 9 * day, "hit": True},
+    mentions.update({"hit7": {"ts": 1000 * day - 7 * day, "hit": True}, "hit9": {"ts": 1000 * day - (KEEP_DAYS + 1) * day, "hit": True},
                      "weak2": {"ts": 1000 * day - 2 * day, "hit": False}, "weak4": {"ts": 1000 * day - 4 * day, "hit": False}})
     prune(now=1000 * day)
     assert sorted(mentions) == ["hit7", "weak2"], sorted(mentions)
     mentions.clear()
     mentions.update(saved_state)
+    chunk = [{"title": "a"}, {"title": "b"}]
+    apply_tones(chunk, '{"items": [{"i": 0, "tone": "critical"}, {"i": 5, "tone": "neutral"}, {"i": 1, "tone": "bogus"}]}')
+    assert chunk == [{"title": "a", "tone": "critical"}, {"title": "b"}], chunk
     blob = encrypt("שלום".encode(), "pw", b"s" * 16)
     assert decrypt(blob, "pw") == ("שלום".encode(), b"s" * 16) and "שלום".encode() not in blob
     try:
@@ -284,6 +350,7 @@ if __name__ == "__main__":
         tg_errors = status["errors"]
         poll_news()
         status["errors"] = tg_errors + status["errors"]
+        print(f"tones added: {tag_tones()}")
         token, repo = os.environ.get("DISPATCH_TOKEN", ""), os.environ.get("GITHUB_REPOSITORY", "")
         refresh = {"token": token, "repo": repo, "workflow": "poll.yml"} if token and repo else None
         ENC.write_bytes(encrypt(snapshot(live=False, refresh=refresh), password, salt))
