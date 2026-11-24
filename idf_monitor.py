@@ -1,7 +1,7 @@
 # IDF media monitor: collects IDF mentions from news sites + the IDF's own Telegram channels,
 # and serves a dashboard.
 # Run: python idf_monitor.py   then open http://localhost:8000
-# One scan for static hosting (GitHub Actions): python idf_monitor.py --once
+# One scan for static hosting (GitHub Actions): DATA_PASSWORD=... python idf_monitor.py --once  (needs: pip install cryptography)
 # Self-check: python idf_monitor.py --selftest
 import html, json, re, sys, threading, time, urllib.parse, urllib.request, webbrowser
 import xml.etree.ElementTree as ET
@@ -169,6 +169,32 @@ def snapshot(live):
         }, ensure_ascii=False).encode()
 
 
+# Hosted copy: data.enc = AES-256-GCM, key = PBKDF2-SHA256(password, salt). The page decrypts it with WebCrypto.
+ENC = HERE / "data.enc"
+KDF_ITERS = 300_000
+
+
+def derive_key(password, salt):
+    import hashlib
+    return hashlib.pbkdf2_hmac("sha256", password.encode(), salt, KDF_ITERS, dklen=32)
+
+
+def encrypt(plain, password, salt):
+    import base64, os
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    iv = os.urandom(12)
+    ct = AESGCM(derive_key(password, salt)).encrypt(iv, plain, None)
+    b64 = lambda b: base64.b64encode(b).decode()
+    return json.dumps({"v": 1, "iters": KDF_ITERS, "salt": b64(salt), "iv": b64(iv), "ct": b64(ct)}).encode()
+
+
+def decrypt(blob, password):
+    import base64
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    d = {k: base64.b64decode(v) if k in ("salt", "iv", "ct") else v for k, v in json.loads(blob).items()}
+    return AESGCM(derive_key(password, d["salt"])).decrypt(d["iv"], d["ct"], None), d["salt"]
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/refresh"):
@@ -201,6 +227,13 @@ def selftest():
           '<div data-post="idf_telegram/56"><time datetime="2026-11-24T11:00:00+00:00"></time></div>')
     [t] = parse_telegram(tg, "TG", "idf_telegram")
     assert t["title"] == 'שורה"1\nשורה 2' and t["link"] == "https://t.me/idf_telegram/55" and t["kind"] == "telegram"
+    blob = encrypt("שלום".encode(), "pw", b"s" * 16)
+    assert decrypt(blob, "pw") == ("שלום".encode(), b"s" * 16) and "שלום".encode() not in blob
+    try:
+        decrypt(blob, "wrong")
+        raise AssertionError("wrong password decrypted")
+    except Exception as e:
+        assert not isinstance(e, AssertionError)
     print("selftest ok")
 
 
@@ -208,13 +241,27 @@ if __name__ == "__main__":
     if "--selftest" in sys.argv:
         selftest()
         sys.exit()
-    if "--once" in sys.argv:  # used by the GitHub Actions schedule: one scan, then write the static data file
+    if "--once" in sys.argv:  # used by the GitHub Actions schedule: one scan, then write the encrypted data file
+        import os
+        password = os.environ.get("DATA_PASSWORD", "")
+        if not password:
+            sys.exit("DATA_PASSWORD is not set; refusing to publish unencrypted data")
+        salt = os.urandom(16)
+        if ENC.exists():
+            try:
+                plain, salt = decrypt(ENC.read_bytes(), password)
+                mentions.clear()
+                mentions.update({m["link"]: m for m in json.loads(plain)["items"]})
+            except Exception:  # password changed: start a fresh history (old data is unreadable anyway)
+                print("could not decrypt previous data, starting fresh")
+                salt = os.urandom(16)
         status["errors"] = poll_telegram()
         tg_errors = status["errors"]
         poll_news()
         status["errors"] = tg_errors + status["errors"]
-        (HERE / "data.json").write_bytes(snapshot(live=False))
-        print(f"{len(mentions)} items, {len(status['errors'])} errors: {status['errors']}")
+        ENC.write_bytes(encrypt(snapshot(live=False), password, salt))
+        DB.unlink(missing_ok=True)  # never leave plaintext state where it could be committed
+        print(f"{len(mentions)} items, {len(status['errors'])} errors")
         sys.exit()
     threading.Thread(target=loop, args=(poll_telegram, TELEGRAM_EVERY_MIN), daemon=True).start()
     threading.Thread(target=loop, args=(poll_news, NEWS_EVERY_MIN), daemon=True).start()

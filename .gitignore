@@ -1,2 +1,5 @@
 .claude/
 __pycache__/
+# plaintext data stays local; only the encrypted data.enc is published
+mentions.json
+data.json

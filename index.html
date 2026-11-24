@@ -95,10 +95,29 @@
   .links small { display: block; color: var(--muted); }
   .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
   .tabs { scrollbar-width: none; }
+  /* password screen */
+  .lock { position: fixed; inset: 0; z-index: 100; background: var(--brand); display: grid; place-items: center; padding: 16px; }
+  .lockbox { background: #fff; border-radius: 16px; padding: 28px 24px; width: min(380px, 100%); box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  .lockbox h2 { margin: 0 0 6px; font-size: 22px; }
+  .lockbox p { margin: 0 0 16px; color: var(--muted); }
+  .lockbox input[type=password] { width: 100%; padding: 12px 14px; font-size: 17px; border: 1px solid #cfd4da; border-radius: 10px; margin-bottom: 12px; }
+  .lockbox button { width: 100%; padding: 12px; font-size: 17px; font-weight: 700; border: 0; border-radius: 10px; background: var(--brand-2); color: #fff; margin-top: 14px; }
+  .lockbox button:disabled { opacity: .6; }
+  .lockbox .err { color: #b3261e; margin: 12px 0 0; min-height: 1.5em; font-weight: 600; }
   @media (max-width: 600px) { h1 { font-size: 18px; } .tab { padding: 10px 8px; font-size: 14px; } .stat b { font-size: 22px; } .actions { margin-inline-start: 0; } }
 </style>
 </head>
 <body>
+<div id="lock" class="lock" hidden>
+  <form id="lockForm" class="lockbox">
+    <h2>🔒 ניטור אזכורי צה"ל</h2>
+    <p>האתר מוגן בסיסמה.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" aria-label="סיסמה" required>
+    <label class="check"><input type="checkbox" id="remember" checked> זכור אותי במכשיר הזה</label>
+    <button type="submit" id="lockBtn">כניסה</button>
+    <p id="lockErr" class="err" role="alert"></p>
+  </form>
+</div>
 <header class="top">
   <div class="top-in">
     <div class="row1">
@@ -107,6 +126,7 @@
       <span class="spacer"></span>
       <button class="btn" id="notifyBtn" title="קבלת התראה במחשב כשיש כתבה חדשה">🔔 התראות</button>
       <button class="btn" id="refreshBtn">↻ רענן עכשיו</button>
+      <button class="btn" id="logoutBtn" hidden title="שכח את הסיסמה במכשיר הזה">יציאה</button>
     </div>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="news" aria-selected="true">📰 כתבות בתקשורת <span class="count" id="cNews">0</span></button>
@@ -346,10 +366,72 @@ function notifyNew(fresh) {
   n.onclick = () => { window.focus(); n.close(); };
 }
 
-async function load() {
+// ---- encrypted data (hosted copy): AES-GCM, key = PBKDF2-SHA256(password, salt), matching idf_monitor.py ----
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+let unlocked = null;  // { salt, key }
+async function deriveKey(pw, enc) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: b64(enc.salt), iterations: enc.iters },
+    base, { name: "AES-GCM", length: 256 }, true, ["decrypt"]);
+}
+const tryDecrypt = async (key, enc) =>
+  JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(enc.iv) }, key, b64(enc.ct))));
+async function restoreKey(enc) {
+  // the derived key (not the password) is kept on this device when "remember me" is on
   try {
-    data = await (await fetch("data.json?t=" + Date.now(), { cache: "no-store" })).json();
+    const s = JSON.parse(localStorage.idfKey || "null");
+    if (!s || s.salt !== enc.salt) return null;
+    return { salt: s.salt, key: await crypto.subtle.importKey("raw", b64(s.raw), "AES-GCM", true, ["decrypt"]) };
+  } catch { return null; }
+}
+function askPassword(enc) {
+  $("lock").hidden = false; $("pw").focus();
+  return new Promise(resolve => {
+    $("lockForm").onsubmit = async e => {
+      e.preventDefault();
+      $("lockBtn").disabled = true; $("lockErr").textContent = "";
+      try {
+        const key = await deriveKey($("pw").value, enc);
+        const result = await tryDecrypt(key, enc);
+        if ($("remember").checked) {
+          const raw = new Uint8Array(await crypto.subtle.exportKey("raw", key));
+          localStorage.idfKey = JSON.stringify({ salt: enc.salt, raw: btoa(String.fromCharCode(...raw)) });
+        }
+        $("lock").hidden = true; $("pw").value = "";
+        resolve({ unlock: { salt: enc.salt, key }, result });
+      } catch { $("lockErr").textContent = "סיסמה שגויה, נסו שוב"; $("pw").select(); }
+      $("lockBtn").disabled = false;
+    };
+  });
+}
+async function decryptData(enc) {
+  if (!unlocked || unlocked.salt !== enc.salt) unlocked = await restoreKey(enc);
+  if (unlocked) {
+    try { return await tryDecrypt(unlocked.key, enc); }
+    catch { unlocked = null; localStorage.removeItem("idfKey"); }
+  }
+  const { unlock, result } = await askPassword(enc);
+  unlocked = unlock;
+  return result;
+}
+async function getData() {
+  // hosted copy publishes only data.enc; the local server serves plain data.json
+  const r = await fetch("data.enc?t=" + Date.now(), { cache: "no-store" });
+  let enc = null;
+  if (r.ok) { try { enc = await r.json(); } catch { } }
+  $("logoutBtn").hidden = !(enc && enc.ct);
+  if (enc && enc.ct) return decryptData(enc);
+  return (await fetch("data.json?t=" + Date.now(), { cache: "no-store" })).json();
+}
+
+let loading = false;
+async function load() {
+  if (loading) return;  // the password screen may still be waiting
+  loading = true;
+  try {
+    data = await getData();
   } catch { $("pillText").textContent = "הנתונים עוד לא זמינים, ננסה שוב בעוד רגע"; return; }
+  finally { loading = false; }
   $("refreshBtn").hidden = !data.status.live;  // the hosted copy has no server to trigger a scan
   data.sources.forEach(s => groupOf[s.name] = s.group);
   data.telegram.forEach(t => groupOf[t.name] = "tg");
@@ -384,6 +466,7 @@ $("tq").oninput = () => { ui.tgShown = PAGE; renderTg(); };
 $("weak").onchange = () => { renderAll(); };
 $("markRead").onclick = () => { lastSeen = now(); localStorage.lastSeen = lastSeen; renderAll(); toast("הכל סומן כנקרא"); };
 $("refreshBtn").onclick = async () => { await fetch("/api/refresh"); toast("הבדיקה התחילה, זה לוקח כ-3 דקות"); setTimeout(load, 1500); };
+$("logoutBtn").onclick = () => { localStorage.removeItem("idfKey"); location.reload(); };
 $("notifyBtn").onclick = async () => {
   if (!("Notification" in window)) return toast("הדפדפן לא תומך בהתראות");
   const p = await Notification.requestPermission();

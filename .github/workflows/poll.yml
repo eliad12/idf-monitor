@@ -16,13 +16,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: pip install -q cryptography
       - run: python idf_monitor.py --selftest
       - run: python idf_monitor.py --once
-      - name: Save results
+        env:
+          DATA_PASSWORD: ${{ secrets.DATA_PASSWORD }}
+      - name: Save results (encrypted only)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add mentions.json data.json
+          git add data.enc
           git diff --cached --quiet && exit 0
           git commit -m "Update mentions"
           git pull --rebase && git push
