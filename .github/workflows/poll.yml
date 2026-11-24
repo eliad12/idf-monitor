@@ -21,6 +21,7 @@ jobs:
       - run: python idf_monitor.py --once
         env:
           DATA_PASSWORD: ${{ secrets.DATA_PASSWORD }}
+          DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}   # optional: powers the site's refresh button
       - name: Save results (encrypted only)
         run: |
           git config user.name "github-actions[bot]"

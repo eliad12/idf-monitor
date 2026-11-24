@@ -159,13 +159,15 @@ def loop(fn, minutes):
         time.sleep(minutes * 60)
 
 
-def snapshot(live):
-    """What the dashboard reads: served at /data.json locally, written to data.json for static hosting."""
+def snapshot(live, refresh=None):
+    """What the dashboard reads: served at /data.json locally, encrypted into data.enc for the hosted copy.
+    `refresh` (hosted only, inside the encryption) lets the page start a scan from its refresh button."""
     with lock:
         return json.dumps({
             "items": sorted(mentions.values(), key=lambda m: -m["ts"]), "status": {**status, "live": live},
-            "sources": [{"name": n, "group": g} for n, _, _, g in SOURCES],
+            "sources": [{"name": n, "group": g, "domain": d.split("/")[0]} for n, d, _, g in SOURCES],
             "telegram": [{"name": n, "channel": c} for n, c in TELEGRAM],
+            "refresh": refresh,
         }, ensure_ascii=False).encode()
 
 
@@ -259,7 +261,9 @@ if __name__ == "__main__":
         tg_errors = status["errors"]
         poll_news()
         status["errors"] = tg_errors + status["errors"]
-        ENC.write_bytes(encrypt(snapshot(live=False), password, salt))
+        token, repo = os.environ.get("DISPATCH_TOKEN", ""), os.environ.get("GITHUB_REPOSITORY", "")
+        refresh = {"token": token, "repo": repo, "workflow": "poll.yml"} if token and repo else None
+        ENC.write_bytes(encrypt(snapshot(live=False, refresh=refresh), password, salt))
         DB.unlink(missing_ok=True)  # never leave plaintext state where it could be committed
         print(f"{len(mentions)} items, {len(status['errors'])} errors")
         sys.exit()

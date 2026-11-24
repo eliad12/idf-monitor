@@ -1,209 +1,390 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ניטור אזכורי צה"ל</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>הניטור של מיכלי</title>
+<meta name="theme-color" content="#24382c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="הניטור של מיכלי">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f3f4f6; --card: #fff; --ink: #1a1d21; --muted: #5f6670; --line: #e3e6ea;
-    --brand: #2f4a3a; --brand-2: #3f6b52; --il: #1f5fa8; --world: #7a3fa0; --tg: #1e88c7; --new: #e0a100;
+    --bg: #f3f4f0; --card: #ffffff; --card-2: #f7f8f5; --ink: #17211b; --muted: #66716a; --line: #e2e6df;
+    --brand: #24382c; --brand-2: #3b6b50; --brand-soft: #e6efe8; --gold: #d9a521; --gold-soft: #fbf1d6;
+    --il: #2563a8; --world: #7a42a6; --tg: #1f8fd0; --live: #e5484d;
+    --shadow: 0 1px 2px rgba(20,30,25,.05), 0 4px 14px rgba(20,30,25,.06);
+    --radius: 16px; --nav-h: 0px;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 "Segoe UI", system-ui, Arial, sans-serif; }
-  button, input, select { font: inherit; }
+  [data-theme=dark] {
+    --bg: #0e1310; --card: #171f1a; --card-2: #1d2620; --ink: #e8eee9; --muted: #98a59c; --line: #27322b;
+    --brand: #142019; --brand-2: #5fa37c; --brand-soft: #1f2d24; --gold: #e8b93a; --gold-soft: #3a3118;
+    --il: #6aa3e8; --world: #b48ae0; --tg: #4fb3ea; --shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { background: var(--bg); }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 "Heebo", "Segoe UI", system-ui, Arial, sans-serif; min-height: 100vh; }
+  button, input, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
-  :focus-visible { outline: 3px solid #f0b400; outline-offset: 2px; }
-
-  /* top bar */
-  .top { background: var(--brand); color: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-  .top-in { max-width: 1100px; margin: auto; padding: 12px 16px 0; }
-  .row1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  h1 { font-size: 21px; margin: 0; font-weight: 700; }
-  .pill { font-size: 13px; background: rgba(255,255,255,.14); padding: 3px 10px; border-radius: 99px; display: inline-flex; gap: 6px; align-items: center; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: #6fdc8c; }
-  .pill.busy .dot { background: #ffd45c; animation: pulse 1s infinite; }
-  @keyframes pulse { 50% { opacity: .3; } }
-  .spacer { flex: 1; }
-  .btn { border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; padding: 6px 12px; border-radius: 8px; }
-  .btn:hover { background: rgba(255,255,255,.12); }
-  .tabs { display: flex; gap: 4px; margin-top: 10px; overflow-x: auto; }
-  .tab { background: none; border: 0; color: #d7e3db; padding: 10px 14px; border-bottom: 3px solid transparent; font-weight: 600; white-space: nowrap; }
-  .tab[aria-selected=true] { color: #fff; border-bottom-color: #f0b400; }
-  .count { background: rgba(255,255,255,.18); border-radius: 99px; padding: 0 8px; font-size: 13px; margin-inline-start: 4px; }
-  .count.hot { background: var(--new); color: #1a1d21; }
-
-  main { max-width: 1100px; margin: 18px auto 60px; padding: 0 16px; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 8px; }
   [hidden] { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-  /* summary */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 14px; }
-  .stat { background: var(--card); border-radius: 12px; padding: 12px 16px; border: 1px solid var(--line); }
-  .stat b { display: block; font-size: 26px; line-height: 1.2; }
-  .stat span { color: var(--muted); font-size: 14px; }
+  /* ---------- lock screen ---------- */
+  .lock { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px;
+    background: radial-gradient(1200px 600px at 80% -10%, #3b6b50 0%, transparent 60%), linear-gradient(160deg, #1d2f24, #0f1913); }
+  .lockbox { background: var(--card); border-radius: 24px; padding: 32px 26px 26px; width: min(380px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.35); text-align: center; }
+  .lockbox img { width: 76px; height: 76px; border-radius: 20px; box-shadow: 0 6px 18px rgba(0,0,0,.2); }
+  .lockbox h2 { margin: 14px 0 4px; font-size: 24px; font-weight: 800; }
+  .lockbox p { margin: 0 0 20px; color: var(--muted); }
+  .lockbox input[type=password] { width: 100%; padding: 14px 16px; font-size: 17px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--card-2); text-align: center; }
+  .lockbox input[type=password]:focus { border-color: var(--brand-2); outline: none; }
+  .lockbox .check { justify-content: center; margin-top: 12px; }
+  .primary { width: 100%; padding: 14px; font-size: 17px; font-weight: 700; border: 0; border-radius: 14px; background: var(--brand-2); color: #fff; margin-top: 16px; }
+  .primary:disabled { opacity: .6; }
+  .err { color: var(--live); margin: 12px 0 0; min-height: 1.5em; font-weight: 600; }
 
-  /* filters */
-  .filters { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
-  .search { flex: 1 1 220px; padding: 8px 12px; border: 1px solid #cfd4da; border-radius: 8px; }
-  .seg { display: inline-flex; border: 1px solid #cfd4da; border-radius: 8px; overflow: hidden; }
-  .seg button { border: 0; background: #fff; padding: 7px 12px; color: var(--ink); }
-  .seg button + button { border-inline-start: 1px solid #cfd4da; }
-  .seg button[aria-pressed=true] { background: var(--brand-2); color: #fff; }
-  .check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
-  .link-btn { background: none; border: 0; color: var(--brand-2); text-decoration: underline; padding: 4px; font-size: 14px; }
+  /* ---------- header ---------- */
+  .top { background: var(--brand); color: #fff; position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top); }
+  .top-in { max-width: 1040px; margin: auto; padding: 14px 18px 12px; display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 44px; height: 44px; border-radius: 14px; flex: none; }
+  .hello { flex: 1; min-width: 0; }
+  .hello h1 { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hello .sub { font-size: 13px; color: #c9d8ce; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #6fdc8c; display: inline-block; }
+  .busy .live-dot { background: var(--gold); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .iconbtn { width: 42px; height: 42px; border-radius: 12px; border: 0; background: rgba(255,255,255,.12); color: #fff; display: grid; place-items: center; font-size: 19px; flex: none; }
+  .iconbtn:hover { background: rgba(255,255,255,.2); }
+  .iconbtn svg { width: 21px; height: 21px; }
+  .spinning svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(-360deg); } }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-  .chip { border: 1px solid #cfd4da; background: #fff; border-radius: 99px; padding: 4px 12px; font-size: 14px; color: var(--ink); }
-  .chip small { color: var(--muted); margin-inline-start: 4px; }
+  /* refresh progress */
+  .progress { background: var(--brand); color: #fff; padding: 0 18px 12px; }
+  .progress-in { max-width: 1040px; margin: auto; }
+  .progress .txt { font-size: 13px; display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; color: #dfe9e2; }
+  .bar { height: 6px; background: rgba(255,255,255,.15); border-radius: 99px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--gold); border-radius: 99px; transition: width .6s ease; }
+
+  /* ---------- navigation: top tabs on desktop, bottom bar on phones ---------- */
+  .nav { background: var(--brand); position: sticky; z-index: 19; }
+  .nav-in { max-width: 1040px; margin: auto; padding: 0 12px; display: flex; gap: 4px; }
+  .nav button { background: none; border: 0; color: #bccbc1; padding: 10px 14px 12px; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 7px; border-bottom: 3px solid transparent; position: relative; }
+  .nav button[aria-selected=true] { color: #fff; border-bottom-color: var(--gold); }
+  .nav .ico { font-size: 17px; }
+  .nav .count { background: rgba(255,255,255,.16); border-radius: 99px; padding: 0 7px; font-size: 12px; font-weight: 700; min-width: 20px; text-align: center; }
+  .nav .count.hot { background: var(--gold); color: #1a1a1a; }
+  @media (max-width: 720px) {
+    :root { --nav-h: calc(64px + env(safe-area-inset-bottom)); }
+    .nav { position: fixed; bottom: 0; left: 0; right: 0; top: auto; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -4px 18px rgba(0,0,0,.06); }
+    .nav-in { padding: 0; gap: 0; }
+    .nav button { flex: 1; flex-direction: column; gap: 1px; padding: 8px 2px 6px; font-size: 11.5px; color: var(--muted); border-bottom: 0; }
+    .nav button[aria-selected=true] { color: var(--brand-2); }
+    .nav button[aria-selected=true] .ico { transform: translateY(-1px) scale(1.12); }
+    .nav .ico { font-size: 22px; transition: transform .15s; }
+    .nav .count { position: absolute; top: 4px; left: calc(50% - 26px); background: var(--live); color: #fff; font-size: 10.5px; padding: 0 5px; }
+    .nav .count.hot { background: var(--live); color: #fff; }
+    .nav .count.quiet { display: none; }
+  }
+
+  main { max-width: 1040px; margin: 0 auto; padding: 16px 16px calc(40px + var(--nav-h)); }
+
+  /* ---------- summary ---------- */
+  .hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--line); }
+  .stat-main { padding: 16px 18px 14px; }
+  .stat-main .big { font-size: 38px; font-weight: 800; line-height: 1; }
+  .stat-main .lbl { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-top: 14px; }
+  .spark i { flex: 1; background: var(--brand-soft); border-radius: 3px 3px 1px 1px; min-height: 3px; position: relative; }
+  .spark i.on { background: var(--brand-2); }
+  .spark i.now { background: var(--gold); }
+  .spark-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .stat-side { display: grid; gap: 12px; }
+  .mini { padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .mini .em { font-size: 24px; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); flex: none; }
+  .mini.gold .em { background: var(--gold-soft); }
+  .mini b { display: block; font-size: 22px; line-height: 1.15; font-weight: 800; }
+  .mini span { color: var(--muted); font-size: 13.5px; }
+  .mini b.small { font-size: 17px; }
+  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; } .stat-side { grid-template-columns: 1fr 1fr; } .mini { padding: 12px; gap: 10px; } .mini .em { width: 38px; height: 38px; font-size: 20px; } .mini b { font-size: 19px; } .mini b.small { font-size: 15px; } }
+
+  /* ---------- search + filters ---------- */
+  .searchrow { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search { flex: 1; position: relative; }
+  .search input { width: 100%; padding: 12px 44px 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); font-size: 16px; }
+  .search input:focus { outline: none; border-color: var(--brand-2); }
+  .search .mag { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .filterbtn { border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); border-radius: 14px; padding: 0 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .filterbtn .dot { background: var(--brand-2); color: #fff; border-radius: 99px; font-size: 12px; padding: 0 7px; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin: 0 -16px 4px; padding-inline: 16px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 6px 12px 6px 14px; font-size: 14px; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; flex: none; }
+  .chip img { width: 16px; height: 16px; border-radius: 4px; }
+  .chip small { color: var(--muted); font-weight: 600; }
   .chip.zero { opacity: .45; }
-  .chip[aria-pressed=true] { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .chip[aria-pressed=true] small { color: #ccc; }
+  .chip[aria-pressed=true] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .chip[aria-pressed=true] small { color: inherit; opacity: .7; }
+  .listhead { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 14px; margin: 4px 2px 6px; gap: 10px; }
+  .textbtn { background: none; border: 0; color: var(--brand-2); font-weight: 600; font-size: 14px; padding: 6px 4px; }
 
-  /* list */
-  .day { font-size: 14px; font-weight: 700; color: var(--muted); margin: 18px 4px 8px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; border-inline-start: 5px solid var(--line); }
-  .card.new { border-inline-start-color: var(--new); }
-  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-  .badge { color: #fff; font-weight: 600; padding: 1px 9px; border-radius: 6px; font-size: 13px; }
-  .badge.il { background: var(--il); } .badge.world { background: var(--world); } .badge.tg { background: var(--tg); }
-  .newtag { background: var(--new); color: #1a1d21; font-weight: 700; padding: 0 7px; border-radius: 6px; }
-  .card a.title { color: var(--ink); text-decoration: none; font-size: 17px; font-weight: 600; unicode-bidi: plaintext; display: block; }
-  .card a.title:hover { text-decoration: underline; }
+  /* bottom sheet (filters, settings) */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 40; animation: fade .2s; }
+  .sheet { position: fixed; z-index: 41; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); background: var(--card); border-radius: 22px 22px 0 0; padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,.2); animation: up .22s ease-out; max-height: 85vh; overflow: auto; }
+  .sheet .grab { width: 42px; height: 5px; border-radius: 9px; background: var(--line); margin: 0 auto 10px; }
+  .sheet h3 { margin: 4px 0 14px; font-size: 19px; display: flex; justify-content: space-between; align-items: center; }
+  .sheet h4 { margin: 18px 0 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
+  @keyframes up { from { transform: translate(-50%, 100%); } }
+  @keyframes fade { from { opacity: 0; } }
+  .seg { display: flex; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+  .seg button { flex: 1; border: 0; background: none; padding: 8px 6px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--muted); }
+  .seg button[aria-pressed=true] { background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .check { display: flex; gap: 10px; align-items: center; font-size: 15px; }
+  .check input { width: 20px; height: 20px; accent-color: var(--brand-2); flex: none; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .row small { display: block; color: var(--muted); font-size: 13px; }
+  .switch { width: 50px; height: 30px; border-radius: 99px; border: 0; background: var(--line); position: relative; flex: none; transition: background .2s; }
+  .switch::after { content: ""; position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: right .2s; }
+  .switch[aria-checked=true] { background: var(--brand-2); }
+  .switch[aria-checked=true]::after { right: 23px; }
+  .ghost { border: 1px solid var(--line); background: var(--card-2); border-radius: 12px; padding: 8px 14px; font-weight: 600; }
+  .love { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
+
+  /* ---------- article cards ---------- */
+  .day { font-size: 13px; font-weight: 700; color: var(--muted); margin: 20px 4px 8px; letter-spacing: .2px; }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 13px 15px 10px; margin-bottom: 10px; position: relative; overflow: hidden; }
+  .item.new::before { content: ""; position: absolute; inset-block: 0; right: 0; width: 4px; background: var(--gold); }
+  .meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  .fav { width: 20px; height: 20px; border-radius: 6px; background: var(--card-2); flex: none; object-fit: contain; }
+  .src { font-weight: 700; color: var(--ink); }
+  .src.il { color: var(--il); } .src.world { color: var(--world); } .src.tg { color: var(--tg); }
+  .tag { font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 99px; }
+  .tag.new { background: var(--gold-soft); color: #8a6400; }
+  [data-theme=dark] .tag.new { color: var(--gold); }
+  .tag.now { background: #fde7e8; color: #c62f35; display: inline-flex; align-items: center; gap: 5px; }
+  [data-theme=dark] .tag.now { background: #3a1d1f; color: #ff8b8f; }
+  .tag.now::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.2s infinite; }
+  .item .title { display: block; text-decoration: none; font-size: 17px; font-weight: 600; line-height: 1.45; unicode-bidi: plaintext; color: var(--ink); }
+  .item .title:hover { color: var(--brand-2); }
   .tgtext { white-space: pre-wrap; unicode-bidi: plaintext; font-size: 16px; }
-  .tgtext.clamp { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
-  .actions { margin-inline-start: auto; display: flex; gap: 4px; }
-  .actions button, .actions a { border: 1px solid var(--line); background: #fafbfc; color: var(--muted); border-radius: 6px; padding: 2px 9px; font-size: 13px; text-decoration: none; }
-  .actions button:hover, .actions a:hover { color: var(--ink); border-color: #cfd4da; }
-  .empty { text-align: center; color: var(--muted); padding: 40px 10px; background: var(--card); border-radius: 12px; border: 1px dashed #cfd4da; }
-  .more { display: block; margin: 14px auto; padding: 8px 20px; border-radius: 8px; border: 1px solid #cfd4da; background: #fff; }
-  .errors { font-size: 13px; color: #8a4b00; background: #fff6e0; border: 1px solid #f2d899; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
+  .tgtext.clamp { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+  .more-txt { background: none; border: 0; color: var(--brand-2); font-weight: 600; padding: 4px 0 0; font-size: 14px; }
+  .acts { display: flex; gap: 2px; margin-top: 6px; margin-inline-start: -8px; }
+  .acts button, .acts a { background: none; border: 0; color: var(--muted); font-size: 13.5px; font-weight: 600; padding: 6px 8px; border-radius: 9px; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+  .acts button:hover, .acts a:hover { background: var(--card-2); color: var(--ink); }
+  .acts .saved { color: var(--gold); }
+  .acts svg { width: 17px; height: 17px; }
+  .loadmore { display: block; margin: 16px auto; padding: 11px 26px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); font-weight: 600; box-shadow: var(--shadow); }
+  .empty { text-align: center; color: var(--muted); padding: 46px 16px; }
+  .empty .em { font-size: 44px; display: block; margin-bottom: 8px; }
+  .empty b { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
+  .skel { height: 92px; border-radius: var(--radius); margin-bottom: 10px; background: linear-gradient(90deg, var(--card) 25%, var(--card-2) 50%, var(--card) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border: 1px solid var(--line); }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .warn { background: var(--gold-soft); color: var(--ink); border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; display: flex; gap: 8px; }
+  .banner { background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; display: flex; gap: 12px; align-items: center; }
+  .banner .em { font-size: 26px; }
+  .banner p { margin: 0; flex: 1; font-size: 14.5px; }
+  .banner p b { display: block; font-size: 15.5px; }
 
-  /* social */
-  .note { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  /* ---------- social ---------- */
+  .note { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
-  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
-  .panel h3 { margin: 0; font-size: 16px; padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .panel { overflow: hidden; display: flex; flex-direction: column; }
+  .panel h3 { margin: 0; font-size: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .panel h3 a { font-size: 13px; font-weight: 600; color: var(--brand-2); }
   .panel .body { height: 560px; overflow: auto; padding: 0 8px; }
-  .fallback { text-align: center; padding: 28px 16px; color: var(--muted); }
-  .fallback p { margin: 0 0 14px; }
-  .fallback .big { display: inline-block; background: var(--ink); color: #fff; text-decoration: none; padding: 10px 22px; border-radius: 10px; font-weight: 600; }
-  .fallback small { display: block; margin-top: 12px; }
-  .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 14px; }
-  .links a { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; color: var(--ink); text-decoration: none; }
+  .fallback { text-align: center; padding: 30px 18px; color: var(--muted); }
+  .fallback .big { display: inline-block; background: var(--ink); color: var(--bg); text-decoration: none; padding: 11px 24px; border-radius: 12px; font-weight: 700; margin: 6px 0 10px; }
+  .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 12px; }
+  .links a { display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; }
   .links a:hover { border-color: var(--brand-2); }
-  .links small { display: block; color: var(--muted); }
-  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
-  .tabs { scrollbar-width: none; }
-  /* password screen */
-  .lock { position: fixed; inset: 0; z-index: 100; background: var(--brand); display: grid; place-items: center; padding: 16px; }
-  .lockbox { background: #fff; border-radius: 16px; padding: 28px 24px; width: min(380px, 100%); box-shadow: 0 10px 40px rgba(0,0,0,.3); }
-  .lockbox h2 { margin: 0 0 6px; font-size: 22px; }
-  .lockbox p { margin: 0 0 16px; color: var(--muted); }
-  .lockbox input[type=password] { width: 100%; padding: 12px 14px; font-size: 17px; border: 1px solid #cfd4da; border-radius: 10px; margin-bottom: 12px; }
-  .lockbox button { width: 100%; padding: 12px; font-size: 17px; font-weight: 700; border: 0; border-radius: 10px; background: var(--brand-2); color: #fff; margin-top: 14px; }
-  .lockbox button:disabled { opacity: .6; }
-  .lockbox .err { color: #b3261e; margin: 12px 0 0; min-height: 1.5em; font-weight: 600; }
-  @media (max-width: 600px) { h1 { font-size: 18px; } .tab { padding: 10px 8px; font-size: 14px; } .stat b { font-size: 22px; } .actions { margin-inline-start: 0; } }
+  .links .em { font-size: 22px; }
+  .links small { display: block; color: var(--muted); direction: ltr; text-align: right; }
+  h2.sec { font-size: 17px; margin: 26px 2px 4px; }
+
+  .toast { position: fixed; bottom: calc(20px + var(--nav-h)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 12px; font-size: 14.5px; font-weight: 600; z-index: 60; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100% - 32px); text-align: center; }
 </style>
 </head>
 <body>
+
+<!-- ======= password screen ======= -->
 <div id="lock" class="lock" hidden>
   <form id="lockForm" class="lockbox">
-    <h2>🔒 ניטור אזכורי צה"ל</h2>
-    <p>האתר מוגן בסיסמה.</p>
+    <img src="icon-192.png" alt="">
+    <h2>היי מיכלי 👋</h2>
+    <p>הכניסי סיסמה כדי להיכנס לניטור</p>
     <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" aria-label="סיסמה" required>
-    <label class="check"><input type="checkbox" id="remember" checked> זכור אותי במכשיר הזה</label>
-    <button type="submit" id="lockBtn">כניסה</button>
+    <label class="check"><input type="checkbox" id="remember" checked> זכרי אותי במכשיר הזה</label>
+    <button type="submit" id="lockBtn" class="primary">כניסה</button>
     <p id="lockErr" class="err" role="alert"></p>
   </form>
 </div>
+
+<!-- ======= header ======= -->
 <header class="top">
   <div class="top-in">
-    <div class="row1">
-      <h1>ניטור אזכורי צה"ל</h1>
-      <span class="pill" id="pill"><span class="dot"></span><span id="pillText">טוען...</span></span>
-      <span class="spacer"></span>
-      <button class="btn" id="notifyBtn" title="קבלת התראה במחשב כשיש כתבה חדשה">🔔 התראות</button>
-      <button class="btn" id="refreshBtn">↻ רענן עכשיו</button>
-      <button class="btn" id="logoutBtn" hidden title="שכח את הסיסמה במכשיר הזה">יציאה</button>
+    <img class="avatar" src="icon-192.png" alt="">
+    <div class="hello">
+      <h1 id="greet">שלום מיכלי</h1>
+      <div class="sub" id="sub"><span class="live-dot"></span><span id="subText">טוען...</span></div>
     </div>
-    <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="news" aria-selected="true">📰 כתבות בתקשורת <span class="count" id="cNews">0</span></button>
-      <button class="tab" role="tab" data-tab="tg" aria-selected="false">✈️ טלגרם צה"ל <span class="count" id="cTg">0</span></button>
-      <button class="tab" role="tab" data-tab="social" aria-selected="false">📱 רשתות חברתיות</button>
-    </nav>
+    <button class="iconbtn" id="refreshBtn" title="חפשי כתבות חדשות עכשיו" aria-label="חיפוש כתבות חדשות עכשיו" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>
+    </button>
+    <button class="iconbtn" id="settingsBtn" title="הגדרות" aria-label="הגדרות">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+  <div class="progress" id="progress" hidden>
+    <div class="progress-in">
+      <div class="txt"><span id="progText">מתחילה עדכון...</span><span id="progPct"></span></div>
+      <div class="bar"><i id="progBar"></i></div>
+    </div>
   </div>
 </header>
 
+<nav class="nav" role="tablist" aria-label="מסכים">
+  <div class="nav-in">
+    <button role="tab" data-tab="news" aria-selected="true"><span class="ico">📰</span><span>חדשות</span><span class="count" id="cNews">0</span></button>
+    <button role="tab" data-tab="tg" aria-selected="false"><span class="ico">✈️</span><span>טלגרם צה"ל</span><span class="count" id="cTg">0</span></button>
+    <button role="tab" data-tab="saved" aria-selected="false"><span class="ico">⭐</span><span>שמורים</span><span class="count quiet" id="cSaved">0</span></button>
+    <button role="tab" data-tab="social" aria-selected="false"><span class="ico">📱</span><span>רשתות</span></button>
+  </div>
+</nav>
+
 <main>
-  <!-- NEWS -->
+  <!-- install hint (phones, until installed or dismissed) -->
+  <div class="banner" id="installHint" hidden>
+    <span class="em">📲</span>
+    <p><b>להפוך לאפליקציה במסך הבית</b><span id="installText"></span></p>
+    <button class="ghost" id="installBtn" hidden>התקנה</button>
+    <button class="textbtn" id="installClose" aria-label="סגירה">✕</button>
+  </div>
+
+  <!-- ======= NEWS ======= -->
   <section id="tab-news" role="tabpanel">
-    <div class="stats">
-      <div class="stat"><b id="sDay">0</b><span>כתבות ב-24 השעות האחרונות</span></div>
-      <div class="stat"><b id="sNew">0</b><span>חדשות מאז שסימנת "נקרא"</span></div>
-      <div class="stat"><b id="sTop">-</b><span>האתר שדיבר הכי הרבה על צה"ל היום</span></div>
-    </div>
-    <div class="errors" id="errors" hidden></div>
-    <div class="filters">
-      <input class="search" id="q" type="search" placeholder="🔍 חיפוש בכותרות (למשל: רמטכ&quot;ל, עזה, לבנון)" aria-label="חיפוש בכותרות">
-      <div class="seg" id="range" aria-label="טווח זמן">
-        <button data-v="1">שעה</button><button data-v="6">6 שעות</button><button data-v="24">24 שעות</button><button data-v="0" aria-pressed="true">הכל</button>
+    <div class="hero">
+      <div class="card stat-main">
+        <div class="big" id="sDay">0</div>
+        <div class="lbl">כתבות שהזכירו את צה"ל ב-24 השעות האחרונות</div>
+        <div class="spark" id="spark" aria-hidden="true"></div>
+        <div class="spark-axis"><span>לפני 24 שעות</span><span>עכשיו</span></div>
       </div>
-      <div class="seg" id="group" aria-label="סוג אתר">
-        <button data-v="" aria-pressed="true">הכל</button><button data-v="il">ישראל</button><button data-v="world">עולם</button>
+      <div class="stat-side">
+        <div class="card mini gold"><span class="em">✨</span><div><b id="sNew">0</b><span>חדשות בשבילך</span></div></div>
+        <div class="card mini"><span class="em">🏆</span><div><b id="sTop" class="small">-</b><span>האתר שדיבר הכי הרבה היום</span></div></div>
       </div>
-      <label class="check"><input type="checkbox" id="weak"> הצג גם כתבות שצה"ל רק מוזכר בתוכן שלהן</label>
-      <button class="link-btn" id="markRead">✓ סמן הכל כנקרא</button>
     </div>
-    <div class="chips" id="chips"></div>
-    <div id="newsList"></div>
+    <div class="warn" id="errors" hidden></div>
+    <div class="searchrow">
+      <label class="search"><span class="sr">חיפוש</span>
+        <input id="q" type="search" placeholder='חיפוש: רמטכ"ל, עזה, לבנון...' enterkeyhint="search">
+        <span class="mag">🔍</span>
+      </label>
+      <button class="filterbtn" id="filterBtn">סינון <span class="dot" id="filterDot" hidden>0</span></button>
+    </div>
+    <div class="chips" id="chips" aria-label="סינון לפי אתר"></div>
+    <div class="listhead"><span id="listCount"></span><button class="textbtn" id="markRead">✓ סמני הכל כנקרא</button></div>
+    <div id="newsList"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
   </section>
 
-  <!-- TELEGRAM -->
+  <!-- ======= TELEGRAM ======= -->
   <section id="tab-tg" role="tabpanel" hidden>
-    <p class="note">הודעות מערוצי הטלגרם הרשמיים של צה"ל. לחיצה על הודעה פותחת או מקצרת אותה.</p>
-    <div class="filters">
-      <input class="search" id="tq" type="search" placeholder="🔍 חיפוש בהודעות" aria-label="חיפוש בהודעות">
-      <div class="seg" id="tgChan"></div>
+    <p class="note">הודעות מהערוצים הרשמיים של צה"ל בטלגרם.</p>
+    <div class="searchrow">
+      <label class="search"><span class="sr">חיפוש בהודעות</span>
+        <input id="tq" type="search" placeholder="חיפוש בהודעות..." enterkeyhint="search">
+        <span class="mag">🔍</span>
+      </label>
     </div>
+    <div class="chips" id="tgChan"></div>
     <div id="tgList"></div>
   </section>
 
-  <!-- SOCIAL -->
+  <!-- ======= SAVED ======= -->
+  <section id="tab-saved" role="tabpanel" hidden>
+    <p class="note">כתבות והודעות ששמרת עם ⭐. הן נשמרות במכשיר הזה.</p>
+    <div id="savedList"></div>
+  </section>
+
+  <!-- ======= SOCIAL ======= -->
   <section id="tab-social" role="tabpanel" hidden>
-    <p class="note">הפיד של כל חשבון מוצג כאן ישירות. X מציג לפעמים פיד ריק למי שלא מחובר לחשבון. במקרה כזה לחצו "פתח ב-X".</p>
+    <p class="note">הפיד של חשבונות צה"ל. X לפעמים לא מציג פיד בלי התחברות. אם זה קורה, לחצי "פתיחה ב-X".</p>
     <div class="grid" id="socialGrid"></div>
-    <h2 style="font-size:17px;margin:24px 0 0">קישורים מהירים</h2>
+    <h2 class="sec">קישורים מהירים</h2>
     <div class="links">
-      <a href="https://www.instagram.com/idf/" target="_blank" rel="noopener">📸 אינסטגרם צה"ל<small>@idf</small></a>
-      <a href="https://www.tiktok.com/@idf" target="_blank" rel="noopener">🎵 טיקטוק צה"ל<small>@idf</small></a>
-      <a href="https://t.me/idf_telegram" target="_blank" rel="noopener">✈️ טלגרם צה"ל (עברית)<small>t.me/idf_telegram</small></a>
-      <a href="https://t.me/idfofficial" target="_blank" rel="noopener">✈️ Telegram IDF (English)<small>t.me/idfofficial</small></a>
-      <a href="https://x.com/idfonline" target="_blank" rel="noopener">𝕏 צה"ל בעברית<small>@idfonline</small></a>
-      <a href="https://x.com/IDF" target="_blank" rel="noopener">𝕏 IDF English<small>@IDF</small></a>
-      <a href="https://x.com/AvichayAdraee" target="_blank" rel="noopener">𝕏 דובר צה"ל לערבית<small>@AvichayAdraee</small></a>
-      <a href="https://www.idf.il" target="_blank" rel="noopener">🌐 אתר צה"ל<small>idf.il</small></a>
+      <a class="card" href="https://www.instagram.com/idf/" target="_blank" rel="noopener"><span class="em">📸</span><div>אינסטגרם צה"ל<small>@idf</small></div></a>
+      <a class="card" href="https://www.tiktok.com/@idf" target="_blank" rel="noopener"><span class="em">🎵</span><div>טיקטוק צה"ל<small>@idf</small></div></a>
+      <a class="card" href="https://t.me/idf_telegram" target="_blank" rel="noopener"><span class="em">✈️</span><div>טלגרם צה"ל (עברית)<small>t.me/idf_telegram</small></div></a>
+      <a class="card" href="https://t.me/idfofficial" target="_blank" rel="noopener"><span class="em">✈️</span><div>Telegram IDF (English)<small>t.me/idfofficial</small></div></a>
+      <a class="card" href="https://x.com/idfonline" target="_blank" rel="noopener"><span class="em">𝕏</span><div>צה"ל בעברית<small>@idfonline</small></div></a>
+      <a class="card" href="https://x.com/IDF" target="_blank" rel="noopener"><span class="em">𝕏</span><div>IDF English<small>@IDF</small></div></a>
+      <a class="card" href="https://x.com/AvichayAdraee" target="_blank" rel="noopener"><span class="em">𝕏</span><div>דובר צה"ל לערבית<small>@AvichayAdraee</small></div></a>
+      <a class="card" href="https://www.idf.il" target="_blank" rel="noopener"><span class="em">🌐</span><div>אתר צה"ל<small>idf.il</small></div></a>
     </div>
   </section>
 </main>
 
+<!-- ======= filter sheet ======= -->
+<div id="filterSheet" hidden>
+  <div class="scrim" data-close></div>
+  <div class="sheet" role="dialog" aria-label="סינון כתבות">
+    <div class="grab"></div>
+    <h3>סינון כתבות <button class="textbtn" id="resetFilters">איפוס</button></h3>
+    <h4>מתי</h4>
+    <div class="seg" id="range"><button data-v="0" aria-pressed="true">הכל</button><button data-v="1">שעה</button><button data-v="6">6 שעות</button><button data-v="24">24 שעות</button></div>
+    <h4>איזה אתרים</h4>
+    <div class="seg" id="group"><button data-v="" aria-pressed="true">הכל</button><button data-v="il">ישראלים</button><button data-v="world">בעולם</button></div>
+    <h4>עד כמה מדויק</h4>
+    <label class="check"><input type="checkbox" id="weak"> להציג גם כתבות שצה"ל מוזכר רק בתוכן שלהן, ולא בכותרת</label>
+    <button class="primary" data-close>הצגת התוצאות</button>
+  </div>
+</div>
+
+<!-- ======= settings sheet ======= -->
+<div id="settingsSheet" hidden>
+  <div class="scrim" data-close></div>
+  <div class="sheet" role="dialog" aria-label="הגדרות">
+    <div class="grab"></div>
+    <h3>הגדרות</h3>
+    <div class="row"><div>🔔 התראות על כתבות חדשות<small id="notifyHint">התראה כשהאפליקציה פתוחה ונמצאת כתבה חדשה</small></div><button class="switch" id="notifySwitch" role="switch" aria-checked="false" aria-label="התראות"></button></div>
+    <div class="row"><div>🌙 מצב תצוגה</div>
+      <div class="seg" id="themeSeg" style="width:210px"><button data-v="auto">אוטומטי</button><button data-v="light">בהיר</button><button data-v="dark">כהה</button></div></div>
+    <div class="row"><div>🔄 עדכון אוטומטי<small id="autoHint">האפליקציה בודקת לבד אם יש כתבות חדשות</small></div></div>
+    <div class="row" id="logoutRow" hidden><div>🔒 יציאה מהמכשיר הזה<small>בפעם הבאה תצטרכי להקליד שוב את הסיסמה</small></div><button class="ghost" id="logoutBtn">יציאה</button></div>
+    <p class="love">נבנה במיוחד בשביל מיכלי 💚</p>
+  </div>
+</div>
+
 <script>
 const $ = id => document.getElementById(id);
-const PAGE = 150;
-let data = { items: [], status: {}, sources: [], telegram: [] };
+const PAGE = 120;
+let data = { items: [], status: {}, sources: [], telegram: [], refresh: null };
 let lastSeen = +localStorage.lastSeen || 0;
-let maxFound = 0;              // newest "found" time seen by this page, for notifications
-const ui = { range: 0, group: "", source: "", tgChan: "", shown: PAGE, tgShown: PAGE, tab: "news" };
-const groupOf = {};
+let maxFound = 0;
+const ui = { range: 0, group: "", source: "", tgChan: "", shown: PAGE, tgShown: PAGE };
+const groupOf = {}, domainOf = {};
+let saved = JSON.parse(localStorage.saved || "{}");   // link -> item
 
-// ---- time helpers ----
+// ---------- helpers ----------
 const now = () => Date.now() / 1000;
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 function ago(ts) {
   const s = now() - ts;
   if (s < 90) return "עכשיו";
   if (s < 3600) return `לפני ${Math.round(s / 60)} דק'`;
-  if (s < 86400) return `לפני ${Math.round(s / 3600)} שע'`;
+  if (s < 86400) { const h = Math.round(s / 3600); return h === 1 ? "לפני שעה" : h === 2 ? "לפני שעתיים" : `לפני ${h} שעות`; }
   return new Date(ts * 1000).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" });
 }
 const full = ts => new Date(ts * 1000).toLocaleString("he-IL", { dateStyle: "full", timeStyle: "short" });
@@ -212,109 +393,179 @@ function dayLabel(ts) {
   const diff = Math.round((t - new Date(d).setHours(0, 0, 0, 0)) / 86400000);
   return diff <= 0 ? "היום" : diff === 1 ? "אתמול" : d.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
 }
-const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-
-// ---- shared card pieces ----
-function meta(m, badgeCls) {
-  const row = el("div", "meta");
-  row.append(el("span", "badge " + badgeCls, m.source));
-  const t = el("span", null, ago(m.ts)); t.title = full(m.ts); row.append(t);
-  if (m.found > lastSeen) row.append(el("span", "newtag", "חדש"));
-  const act = el("span", "actions");
-  const copy = el("button", null, "העתק");
-  copy.title = "העתקת כותרת + קישור, להדבקה בדיווח";
-  copy.onclick = () => navigator.clipboard.writeText(`${m.source}: ${m.title}\n${m.link}`).then(() => toast("הועתק"));
-  const open = el("a", null, "פתח ↗"); open.href = m.link; open.target = "_blank"; open.rel = "noopener";
-  act.append(copy, open); row.append(act);
-  return row;
+const favicon = domain => `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+let toastT;
+function toast(text, ms = 2200) {
+  let t = document.querySelector(".toast"); if (!t) { t = el("div", "toast"); t.setAttribute("role", "status"); document.body.append(t); }
+  t.textContent = text; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms);
 }
-function withDays(items, makeCard, limit, onMore) {
+const ICON = {
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>',
+  starOn: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
+  open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7M10 14L21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>',
+};
+
+// ---------- greeting ----------
+function greeting() {
+  const h = new Date().getHours();
+  return h >= 5 && h < 12 ? "בוקר טוב, מיכלי ☀️" : h < 17 && h >= 12 ? "צהריים טובים, מיכלי 🌤️" : h >= 17 && h < 21 ? "ערב טוב, מיכלי 🌇" : "לילה טוב, מיכלי 🌙";
+}
+
+// ---------- theme ----------
+function applyTheme() {
+  const pref = localStorage.theme || "auto";
+  const dark = pref === "dark" || (pref === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  document.querySelectorAll("#themeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === pref));
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+applyTheme();
+
+// ---------- card building ----------
+function itemCard(m) {
+  const tg = m.kind === "telegram";
+  const c = el("article", "item" + (m.found > lastSeen ? " new" : ""));
+  const meta = el("div", "meta");
+  const img = el("img", "fav"); img.alt = ""; img.loading = "lazy";
+  img.src = tg ? favicon("telegram.org") : favicon(domainOf[m.source] || "news.google.com");
+  img.onerror = () => img.style.visibility = "hidden";
+  const src = el("span", "src " + (tg ? "tg" : groupOf[m.source] || "world"), m.source);
+  const t = el("span", null, ago(m.ts)); t.title = full(m.ts);
+  meta.append(img, src, el("span", null, "·"), t);
+  if (now() - m.ts < 3600) meta.append(el("span", "tag now", "עכשיו"));
+  else if (m.found > lastSeen) meta.append(el("span", "tag new", "חדש"));
+  c.append(meta);
+
+  if (tg) {
+    const body = el("div", "tgtext clamp", m.title);
+    c.append(body);
+    if (m.title.length > 280 || m.title.split("\n").length > 6) {
+      const more = el("button", "more-txt", "קראי עוד");
+      more.onclick = () => { const open = body.classList.toggle("clamp"); more.textContent = open ? "קראי עוד" : "הצג פחות"; };
+      c.append(more);
+    }
+  } else {
+    const a = el("a", "title", m.title); a.href = m.link; a.target = "_blank"; a.rel = "noopener";
+    c.append(a);
+  }
+
+  const acts = el("div", "acts");
+  const isSaved = !!saved[m.link];
+  const star = el("button", isSaved ? "saved" : "");
+  star.innerHTML = (isSaved ? ICON.starOn : ICON.star) + `<span>${isSaved ? "נשמר" : "שמירה"}</span>`;
+  star.setAttribute("aria-pressed", isSaved);
+  star.onclick = () => toggleSave(m);
+  const share = el("button"); share.innerHTML = ICON.share + `<span>${navigator.share ? "שיתוף" : "העתקה"}</span>`;
+  share.onclick = () => shareItem(m);
+  const open = el("a"); open.innerHTML = ICON.open + "<span>פתיחה</span>"; open.href = m.link; open.target = "_blank"; open.rel = "noopener";
+  acts.append(star, share, open);
+  c.append(acts);
+  return c;
+}
+function toggleSave(m) {
+  if (saved[m.link]) { delete saved[m.link]; toast("הוסר מהשמורים"); }
+  else { saved[m.link] = m; toast("נשמר ⭐ אפשר למצוא אותו בלשונית שמורים"); }
+  localStorage.saved = JSON.stringify(saved);
+  renderAll();
+}
+async function shareItem(m) {
+  const text = `${m.source}: ${m.title.split("\n")[0].slice(0, 200)}`;
+  if (navigator.share) { try { await navigator.share({ title: m.source, text, url: m.link }); } catch { } return; }
+  await navigator.clipboard.writeText(`${text}\n${m.link}`); toast("הועתק, אפשר להדביק בדיווח");
+}
+function withDays(items, limit, onMore) {
   const out = []; let day = "";
   items.slice(0, limit).forEach(m => {
     const d = dayLabel(m.ts);
     if (d !== day) { out.push(el("div", "day", d)); day = d; }
-    out.push(makeCard(m));
+    out.push(itemCard(m));
   });
-  if (items.length > limit) {
-    const b = el("button", "more", `הצג עוד (${items.length - limit} נוספות)`);
-    b.onclick = onMore; out.push(b);
-  }
+  if (items.length > limit) { const b = el("button", "loadmore", `עוד ${items.length - limit} כתבות`); b.onclick = onMore; out.push(b); }
   return out;
 }
-const empty = text => [el("div", "empty", text)];
+function empty(em, title, text) {
+  const d = el("div", "empty"); d.append(el("span", "em", em), el("b", null, title), el("span", null, text)); return [d];
+}
 
-// ---- news tab ----
-function newsBase() { return data.items.filter(m => m.kind !== "telegram" && (m.hit || $("weak").checked)); }
+// ---------- news ----------
+const newsBase = () => data.items.filter(m => m.kind !== "telegram" && (m.hit || $("weak").checked));
 function renderNews() {
   const base = newsBase(), q = $("q").value.trim().toLowerCase();
   const since = ui.range ? now() - ui.range * 3600 : 0;
   const inScope = base.filter(m => m.ts >= since && (!ui.group || groupOf[m.source] === ui.group) && (!q || m.title.toLowerCase().includes(q)));
   const items = inScope.filter(m => !ui.source || m.source === ui.source);
 
-  // source chips count what the other filters leave
+  // source chips: one swipeable row, busiest first
   const counts = {}; inScope.forEach(m => counts[m.source] = (counts[m.source] || 0) + 1);
-  const names = data.sources.filter(s => !ui.group || s.group === ui.group).map(s => s.name);
-  names.sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+  const names = data.sources.filter(s => !ui.group || s.group === ui.group).map(s => s.name).sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
   const all = el("button", "chip", "כל האתרים"); all.setAttribute("aria-pressed", !ui.source);
   all.onclick = () => { ui.source = ""; ui.shown = PAGE; renderNews(); };
   $("chips").replaceChildren(all, ...names.map(n => {
-    const c = el("button", "chip" + (counts[n] ? "" : " zero"), n);
-    c.append(el("small", null, counts[n] || 0));
+    const c = el("button", "chip" + (counts[n] ? "" : " zero"));
+    const img = el("img"); img.alt = ""; img.loading = "lazy"; img.src = favicon(domainOf[n]); img.onerror = () => img.remove();
+    c.append(img, el("span", null, n), el("small", null, counts[n] || 0));
     c.setAttribute("aria-pressed", ui.source === n);
     c.onclick = () => { ui.source = ui.source === n ? "" : n; ui.shown = PAGE; renderNews(); };
     return c;
   }));
 
-  const card = m => {
-    const c = el("article", "card" + (m.found > lastSeen ? " new" : ""));
-    const a = el("a", "title", m.title); a.href = m.link; a.target = "_blank"; a.rel = "noopener";
-    c.append(meta(m, groupOf[m.source] || "world"), a);
-    return c;
-  };
-  const first = !data.status.last_poll;
-  $("newsList").replaceChildren(...(items.length ? withDays(items, card, ui.shown, () => { ui.shown += PAGE; renderNews(); })
-    : empty(first ? "האיסוף הראשון רץ עכשיו ולוקח כ-3 דקות. הכתבות יופיעו כאן אוטומטית." : "אין כתבות שמתאימות לסינון הזה. נסו טווח זמן רחב יותר או אתר אחר.")));
+  const nFilters = (ui.range ? 1 : 0) + (ui.group ? 1 : 0) + ($("weak").checked ? 1 : 0);
+  $("filterDot").hidden = !nFilters; $("filterDot").textContent = nFilters;
+  $("listCount").textContent = items.length ? `${items.length} כתבות` + (ui.source ? ` מ${ui.source}` : "") : "";
 
-  // stats
+  const first = !data.status.last_poll;
+  $("newsList").replaceChildren(...(items.length ? withDays(items, ui.shown, () => { ui.shown += PAGE; renderNews(); })
+    : first ? empty("⏳", "אוספת כתבות בפעם הראשונה", "זה לוקח כמה דקות. הכתבות יופיעו כאן לבד.")
+    : empty("🔎", "לא נמצאו כתבות", "נסי טווח זמן רחב יותר, אתר אחר או חיפוש אחר.")));
+
+  // summary
   const day = base.filter(m => m.ts >= now() - 86400);
   $("sDay").textContent = day.length;
   $("sNew").textContent = base.filter(m => m.found > lastSeen).length;
   const per = {}; base.filter(m => dayLabel(m.ts) === "היום").forEach(m => per[m.source] = (per[m.source] || 0) + 1);
   const top = Object.entries(per).sort((a, b) => b[1] - a[1])[0];
-  $("sTop").textContent = top ? `${top[0]} (${top[1]})` : "-";
+  $("sTop").textContent = top ? `${top[0]} · ${top[1]}` : "עוד אין";
+  const hours = Array(24).fill(0);
+  day.forEach(m => { const i = 23 - Math.floor((now() - m.ts) / 3600); if (i >= 0 && i < 24) hours[i]++; });
+  const max = Math.max(...hours, 1);
+  $("spark").replaceChildren(...hours.map((n, i) => {
+    const b = el("i", i === 23 ? "now" : n ? "on" : ""); b.style.height = `${Math.max(7, n / max * 100)}%`;
+    b.title = `${n} כתבות`; return b;
+  }));
 }
 
-// ---- telegram tab ----
+// ---------- telegram ----------
 function renderTg() {
   const q = $("tq").value.trim().toLowerCase();
   const items = data.items.filter(m => m.kind === "telegram" && (!ui.tgChan || m.source === ui.tgChan) && (!q || m.title.toLowerCase().includes(q)));
-  const card = m => {
-    const c = el("article", "card" + (m.found > lastSeen ? " new" : ""));
-    const t = el("div", "tgtext clamp", m.title); t.onclick = () => t.classList.toggle("clamp");
-    c.append(meta(m, "tg"), t);
-    return c;
-  };
-  $("tgList").replaceChildren(...(items.length ? withDays(items, card, ui.tgShown, () => { ui.tgShown += PAGE; renderTg(); })
-    : empty("אין עדיין הודעות טלגרם. הן ייאספו תוך 2 דקות.")));
-}
-function buildTgChannels() {
-  const seg = $("tgChan");
-  const mk = (label, v) => { const b = el("button", null, label); b.dataset.v = v; b.setAttribute("aria-pressed", ui.tgChan === v); return b; };
-  seg.replaceChildren(mk("כל הערוצים", ""), ...data.telegram.map(t => mk(t.name, t.name)));
+  const mk = (label, v) => { const b = el("button", "chip", label); b.setAttribute("aria-pressed", ui.tgChan === v); b.onclick = () => { ui.tgChan = v; ui.tgShown = PAGE; renderTg(); }; return b; };
+  $("tgChan").replaceChildren(mk("כל הערוצים", ""), ...data.telegram.map(t => mk(t.name, t.name)));
+  $("tgList").replaceChildren(...(items.length ? withDays(items, ui.tgShown, () => { ui.tgShown += PAGE; renderTg(); })
+    : empty("✈️", "אין עדיין הודעות", "ההודעות מערוצי צה\"ל יופיעו כאן אחרי הבדיקה הבאה.")));
 }
 
-// ---- social tab (embeds load only when opened) ----
+// ---------- saved ----------
+function renderSaved() {
+  const items = Object.values(saved).sort((a, b) => b.ts - a.ts);
+  $("cSaved").textContent = items.length;
+  $("savedList").replaceChildren(...(items.length ? items.map(itemCard)
+    : empty("⭐", "עוד אין כתבות שמורות", "לחצי על \"שמירה\" בכתבה כדי לשמור אותה לאחר כך.")));
+}
+
+// ---------- social (embeds load only when opened) ----------
 let socialLoaded = false;
 function loadSocial() {
   if (socialLoaded) return; socialLoaded = true;
+  const dark = document.documentElement.dataset.theme === "dark" ? ' data-theme="dark"' : "";
   const panels = [
-    { h: 'X · צה"ל בעברית', url: "https://x.com/idfonline", open: "פתח ב-X", html: '<a class="twitter-timeline" data-lang="he" data-height="540" href="https://twitter.com/idfonline">טוען פיד...</a>' },
-    { h: "X · IDF English", url: "https://x.com/IDF", open: "פתח ב-X", html: '<a class="twitter-timeline" data-height="540" href="https://twitter.com/IDF">Loading...</a>' },
-    { h: 'X · דובר צה"ל לערבית', url: "https://x.com/AvichayAdraee", open: "פתח ב-X", html: '<a class="twitter-timeline" data-lang="ar" data-height="540" href="https://twitter.com/AvichayAdraee">טוען פיד...</a>' },
-    { h: 'טיקטוק צה"ל', url: "https://www.tiktok.com/@idf", open: "פתח בטיקטוק", html: '<blockquote class="tiktok-embed" cite="https://www.tiktok.com/@idf" data-unique-id="idf" data-embed-type="creator" style="max-width:780px;min-width:288px"><section><a target="_blank" href="https://www.tiktok.com/@idf">@idf</a></section></blockquote>' },
+    { h: 'X · צה"ל בעברית', url: "https://x.com/idfonline", open: "פתיחה ב-X", html: `<a class="twitter-timeline" data-lang="he"${dark} data-height="540" href="https://twitter.com/idfonline">טוען...</a>` },
+    { h: "X · IDF English", url: "https://x.com/IDF", open: "פתיחה ב-X", html: `<a class="twitter-timeline"${dark} data-height="540" href="https://twitter.com/IDF">Loading...</a>` },
+    { h: 'X · דובר צה"ל לערבית', url: "https://x.com/AvichayAdraee", open: "פתיחה ב-X", html: `<a class="twitter-timeline" data-lang="ar"${dark} data-height="540" href="https://twitter.com/AvichayAdraee">טוען...</a>` },
+    { h: 'טיקטוק צה"ל', url: "https://www.tiktok.com/@idf", open: "פתיחה בטיקטוק", html: '<blockquote class="tiktok-embed" cite="https://www.tiktok.com/@idf" data-unique-id="idf" data-embed-type="creator" style="max-width:780px;min-width:288px"><section><a target="_blank" href="https://www.tiktok.com/@idf">@idf</a></section></blockquote>' },
   ];
   $("socialGrid").replaceChildren(...panels.map(p => {
-    const box = el("div", "panel"), h = el("h3", null, p.h), a = el("a", null, p.open + " ↗");
+    const box = el("div", "card panel"), h = el("h3", null, p.h), a = el("a", null, p.open + " ↗");
     a.href = p.url; a.target = "_blank"; a.rel = "noopener"; h.append(a);
     const body = el("div", "body"); body.innerHTML = p.html;
     box.append(h, body); return box;
@@ -327,46 +578,96 @@ function loadSocial() {
     const p = panels[i], frame = box.querySelector("iframe");
     if (!p.url.includes("x.com") || (frame && frame.offsetHeight > 80)) return;
     const body = box.querySelector(".body"), fb = el("div", "fallback");
-    fb.append(el("p", null, "X לא מציג את הפיד בתוך האתר כשלא מחוברים לחשבון X בדפדפן הזה."));
+    fb.append(el("p", null, "X לא מציג את הפיד כאן כשלא מחוברים לחשבון X."));
     const a = el("a", "big", p.open + " ↗"); a.href = p.url; a.target = "_blank"; a.rel = "noopener";
-    fb.append(a, el("small", null, "אחרי התחברות ל-X ורענון הדף, הפיד אמור להופיע כאן."));
-    body.replaceChildren(fb); body.style.height = "auto";
+    fb.append(a); body.replaceChildren(fb); body.style.height = "auto";
   }), 9000);
 }
 
-// ---- header, tabs, status ----
+// ---------- header + counters ----------
 function renderHeader() {
-  const s = data.status, busy = s.polling || !s.last_poll;
-  $("pill").classList.toggle("busy", busy);
-  $("pillText").textContent = busy ? "אוסף כתבות..." : `עודכן ${ago(s.last_poll)} · ` + (s.live ? "בדיקה כל 10 דק'" : "מתעדכן אוטומטית כל 10–30 דק'");
+  $("greet").textContent = greeting();
+  const s = data.status, busy = s.polling || (!s.last_poll && data.items.length === 0);
+  $("sub").classList.toggle("busy", !!busy || refreshing);
+  const date = new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+  $("subText").textContent = `${date} · ` + (refreshing ? "מעדכנת..." : busy ? "אוספת כתבות..." : s.last_poll ? `עודכן ${ago(s.last_poll)}` : "");
   const newsNew = newsBase().filter(m => m.found > lastSeen).length;
-  const tgNew = data.items.filter(m => m.kind === "telegram" && m.found > lastSeen).length;
-  $("cNews").textContent = newsNew || newsBase().length; $("cNews").classList.toggle("hot", newsNew > 0);
-  $("cTg").textContent = tgNew || data.items.filter(m => m.kind === "telegram").length; $("cTg").classList.toggle("hot", tgNew > 0);
-  $("cNews").title = newsNew ? "חדשות" : "סה\"כ"; $("cTg").title = tgNew ? "חדשות" : "סה\"כ";
-  document.title = (newsNew + tgNew ? `(${newsNew + tgNew}) ` : "") + 'ניטור אזכורי צה"ל';
+  const tgAll = data.items.filter(m => m.kind === "telegram"), tgNew = tgAll.filter(m => m.found > lastSeen).length;
+  setCount("cNews", newsNew, newsBase().length); setCount("cTg", tgNew, tgAll.length);
+  document.title = (newsNew + tgNew ? `(${newsNew + tgNew}) ` : "") + "הניטור של מיכלי";
   const errs = s.errors || [];
   $("errors").hidden = !errs.length;
-  $("errors").textContent = errs.length ? `⚠️ ${errs.length} מקורות לא נטענו בבדיקה האחרונה (ינסה שוב בבדיקה הבאה): ${errs.map(e => e.split(":")[0]).join(", ")}` : "";
-  $("notifyBtn").textContent = ("Notification" in window && Notification.permission === "granted") ? "🔔 התראות פעילות" : "🔔 התראות";
+  $("errors").textContent = errs.length ? `⚠️ ${errs.length === 1 ? "אתר אחד לא נטען" : `${errs.length} אתרים לא נטענו`} בבדיקה האחרונה: ${errs.map(e => e.split(":")[0]).join(", ")}. ננסה שוב בבדיקה הבאה.` : "";
+  $("refreshBtn").hidden = !(s.live || (data.refresh && data.refresh.token));
+  $("refreshBtn").classList.toggle("spinning", refreshing);
+  $("autoHint").textContent = s.live ? "בדיקה כל 10 דקות, וטלגרם כל 2 דקות" : "בדיקה אוטומטית בערך כל 10–30 דקות" + (data.refresh && data.refresh.token ? ", ועוד בכל לחיצה על כפתור הרענון למעלה" : "");
 }
-function renderAll() { renderHeader(); renderNews(); renderTg(); }
+function setCount(id, fresh, total) {
+  const c = $(id); c.textContent = fresh || total; c.classList.toggle("hot", fresh > 0); c.classList.toggle("quiet", !fresh);
+  c.title = fresh ? "חדשות" : "סה\"כ";
+}
+function renderAll() { renderHeader(); renderNews(); renderTg(); renderSaved(); }
 
+// ---------- tabs ----------
 function showTab(name) {
-  ui.tab = name;
-  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
-  ["news", "tg", "social"].forEach(n => $("tab-" + n).hidden = n !== name);
+  document.querySelectorAll(".nav button").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
+  ["news", "tg", "saved", "social"].forEach(n => $("tab-" + n).hidden = n !== name);
   if (name === "social") loadSocial();
-  location.hash = name;
+  if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name);
+  scrollTo({ top: 0 });
+}
+document.querySelectorAll(".nav button").forEach(t => t.onclick = () => showTab(t.dataset.tab));
+const tabFromHash = () => showTab(["news", "tg", "saved", "social"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "news");
+window.onhashchange = tabFromHash;
+
+// ---------- sheets ----------
+function openSheet(id) { $(id).hidden = false; }
+document.querySelectorAll("#filterSheet [data-close], #settingsSheet [data-close]").forEach(b => b.onclick = () => b.closest("#filterSheet, #settingsSheet").hidden = true);
+document.addEventListener("keydown", e => { if (e.key === "Escape") ["filterSheet", "settingsSheet"].forEach(id => $(id).hidden = true); });
+$("filterBtn").onclick = () => openSheet("filterSheet");
+$("settingsBtn").onclick = () => { syncNotifySwitch(); openSheet("settingsSheet"); };
+function seg(id, onPick) {
+  $(id).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    onPick(b.dataset.v);
+  });
+}
+seg("range", v => { ui.range = +v; ui.shown = PAGE; renderNews(); });
+seg("group", v => { ui.group = v; ui.source = ""; ui.shown = PAGE; renderNews(); });
+seg("themeSeg", v => { localStorage.theme = v; applyTheme(); });
+$("resetFilters").onclick = () => {
+  ui.range = 0; ui.group = ""; ui.source = ""; $("weak").checked = false;
+  ["range", "group"].forEach(id => $(id).querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === 0)));
+  renderAll();
+};
+$("weak").onchange = renderAll;
+$("q").oninput = () => { ui.shown = PAGE; renderNews(); };
+$("tq").oninput = () => { ui.tgShown = PAGE; renderTg(); };
+$("markRead").onclick = () => { lastSeen = now(); localStorage.lastSeen = lastSeen; renderAll(); toast("הכל סומן כנקרא ✓"); };
+
+// ---------- notifications ----------
+function syncNotifySwitch() {
+  const on = "Notification" in window && Notification.permission === "granted" && localStorage.notify !== "off";
+  $("notifySwitch").setAttribute("aria-checked", on);
+  if (!("Notification" in window)) $("notifyHint").textContent = "בטלפון הזה צריך קודם להוסיף את האפליקציה למסך הבית";
+}
+$("notifySwitch").onclick = async () => {
+  if (!("Notification" in window)) return toast("כדי לקבל התראות, הוסיפי קודם את האפליקציה למסך הבית");
+  if ($("notifySwitch").getAttribute("aria-checked") === "true") { localStorage.notify = "off"; syncNotifySwitch(); return toast("ההתראות כבויות"); }
+  const p = await Notification.requestPermission();
+  localStorage.notify = "on"; syncNotifySwitch();
+  toast(p === "granted" ? "מעולה! תקבלי התראה על כל כתבה חדשה 🔔" : "ההתראות חסומות בהגדרות הדפדפן");
+};
+async function notifyNew(fresh) {
+  if (!fresh.length || !("Notification" in window) || Notification.permission !== "granted" || localStorage.notify === "off") return;
+  const title = fresh.length === 1 ? 'כתבה חדשה על צה"ל' : `${fresh.length} כתבות חדשות על צה"ל`;
+  const opts = { body: `${fresh[0].source}: ${fresh[0].title.split("\n")[0]}`.slice(0, 180), icon: "icon-192.png", badge: "icon-192.png", tag: "idf-monitor" };
+  try { const reg = await navigator.serviceWorker?.getRegistration(); if (reg) return reg.showNotification(title, opts); } catch { }
+  try { new Notification(title, opts); } catch { }
 }
 
-function notifyNew(fresh) {
-  if (!fresh.length || !("Notification" in window) || Notification.permission !== "granted") return;
-  const n = new Notification(`${fresh.length} אזכורים חדשים של צה"ל`, { body: `${fresh[0].source}: ${fresh[0].title}`.slice(0, 180), tag: "idf-monitor" });
-  n.onclick = () => { window.focus(); n.close(); };
-}
-
-// ---- encrypted data (hosted copy): AES-GCM, key = PBKDF2-SHA256(password, salt), matching idf_monitor.py ----
+// ---------- encrypted data (hosted copy): AES-GCM, key = PBKDF2-SHA256(password, salt), matching idf_monitor.py ----------
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 let unlocked = null;  // { salt, key }
 async function deriveKey(pw, enc) {
@@ -385,11 +686,11 @@ async function restoreKey(enc) {
   } catch { return null; }
 }
 function askPassword(enc) {
-  $("lock").hidden = false; $("pw").focus();
+  $("lock").hidden = false; setTimeout(() => $("pw").focus(), 50);
   return new Promise(resolve => {
     $("lockForm").onsubmit = async e => {
       e.preventDefault();
-      $("lockBtn").disabled = true; $("lockErr").textContent = "";
+      $("lockBtn").disabled = true; $("lockBtn").textContent = "בודקת..."; $("lockErr").textContent = "";
       try {
         const key = await deriveKey($("pw").value, enc);
         const result = await tryDecrypt(key, enc);
@@ -399,8 +700,8 @@ function askPassword(enc) {
         }
         $("lock").hidden = true; $("pw").value = "";
         resolve({ unlock: { salt: enc.salt, key }, result });
-      } catch { $("lockErr").textContent = "סיסמה שגויה, נסו שוב"; $("pw").select(); }
-      $("lockBtn").disabled = false;
+      } catch { $("lockErr").textContent = "הסיסמה לא נכונה, נסי שוב"; $("pw").select(); }
+      $("lockBtn").disabled = false; $("lockBtn").textContent = "כניסה";
     };
   });
 }
@@ -414,71 +715,117 @@ async function decryptData(enc) {
   unlocked = unlock;
   return result;
 }
-async function getData() {
-  // hosted copy publishes only data.enc; the local server serves plain data.json
-  const r = await fetch("data.enc?t=" + Date.now(), { cache: "no-store" });
+async function getData(fresh) {
+  // hosted copy publishes only data.enc; the local server serves plain data.json.
+  // Routine checks revalidate (cheap 304s); `fresh` bypasses the CDN cache while a refresh is tracked.
+  const opt = fresh ? { cache: "no-store" } : { cache: "no-cache" };
+  const r = await fetch("data.enc" + (fresh ? "?t=" + Date.now() : ""), opt);
   let enc = null;
   if (r.ok) { try { enc = await r.json(); } catch { } }
-  $("logoutBtn").hidden = !(enc && enc.ct);
+  $("logoutRow").hidden = !(enc && enc.ct);
   if (enc && enc.ct) return decryptData(enc);
   return (await fetch("data.json?t=" + Date.now(), { cache: "no-store" })).json();
 }
 
 let loading = false;
-async function load() {
+async function load(fresh = false) {
   if (loading) return;  // the password screen may still be waiting
   loading = true;
-  try {
-    data = await getData();
-  } catch { $("pillText").textContent = "הנתונים עוד לא זמינים, ננסה שוב בעוד רגע"; return; }
+  try { data = await getData(fresh); }
+  catch { $("subText").textContent = "אין חיבור כרגע, ננסה שוב בעוד רגע"; return; }
   finally { loading = false; }
-  $("refreshBtn").hidden = !data.status.live;  // the hosted copy has no server to trigger a scan
-  data.sources.forEach(s => groupOf[s.name] = s.group);
+  data.sources.forEach(s => { groupOf[s.name] = s.group; domainOf[s.name] = s.domain; });
   data.telegram.forEach(t => groupOf[t.name] = "tg");
-  if (!$("tgChan").children.length) buildTgChannels();
   const relevant = data.items.filter(m => m.hit);
   if (maxFound) notifyNew(relevant.filter(m => m.found > maxFound));
   maxFound = Math.max(maxFound, ...relevant.map(m => m.found), 1);
   renderAll();
 }
 
-let toastT;
-function toast(text) {
-  let t = document.querySelector(".toast"); if (!t) { t = el("div", "toast"); document.body.append(t); }
-  t.textContent = text; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1500);
+// ---------- manual refresh ----------
+let refreshing = false;
+function progress(pct, text) {
+  $("progress").hidden = pct == null;
+  if (pct == null) return;
+  $("progBar").style.width = pct + "%"; $("progText").textContent = text; $("progPct").textContent = Math.round(pct) + "%";
 }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function refreshNow() {
+  if (refreshing) return toast("כבר מעדכנת, עוד רגע...");
+  refreshing = true; renderHeader();
+  const t0 = now(), before = data.items.length;
+  try {
+    if (data.status.live) {                       // local server: it scans by itself
+      await fetch("/api/refresh");
+      progress(10, "סורקת את כל האתרים...");
+      for (let i = 0; i < 60; i++) {
+        await wait(5000); await load(true);
+        progress(Math.min(95, 10 + i * 2), "סורקת את כל האתרים...");
+        if (data.status.last_poll > t0 && !data.status.polling) break;
+      }
+    } else {                                      // hosted: ask GitHub to run the scan now
+      const { token, repo, workflow } = data.refresh;
+      const gh = (path, init = {}) => fetch(`https://api.github.com/repos/${repo}/actions${path}`,
+        { ...init, headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } });
+      progress(4, "שולחת בקשת עדכון...");
+      const r = await gh(`/workflows/${workflow}/dispatches`, { method: "POST", body: JSON.stringify({ ref: "main" }) });
+      if (r.status !== 204) throw new Error(r.status === 401 || r.status === 403 ? "token" : "dispatch");
+      let run = null;
+      for (let i = 0; i < 90; i++) {              // up to ~9 minutes
+        await wait(6000);
+        const el_ = now() - t0;
+        if (!run || run.status !== "completed") {
+          const runs = (await (await gh(`/workflows/${workflow}/runs?event=workflow_dispatch&per_page=3`)).json()).workflow_runs || [];
+          run = runs.find(x => Date.parse(x.created_at) / 1000 >= t0 - 30) || run;
+          if (!run || run.status === "queued") progress(Math.min(12, 4 + el_ / 4), "ממתינה לתורה בשרת...");
+          else if (run.status !== "completed") progress(Math.min(80, 12 + el_ / 3.2), "סורקת 35 אתרי חדשות וערוצי טלגרם...");
+          else if (run.conclusion !== "success") throw new Error("run");
+        }
+        if (run && run.status === "completed") {
+          progress(Math.min(97, 82 + (i % 10)), "מפרסמת את העדכון...");
+          await load(true);
+          if (data.status.last_poll > t0) break;
+        }
+      }
+    }
+    if (data.status.last_poll > t0) {
+      progress(100, "העדכון הושלם ✓");
+      const added = data.items.length - before;
+      toast(added > 0 ? `העדכון הושלם: ${added} פריטים חדשים ✨` : "העדכון הושלם, אין כרגע כתבות חדשות", 3500);
+    } else toast("העדכון לוקח יותר זמן מהרגיל. הנתונים יתעדכנו לבד בהמשך.", 4000);
+  } catch (e) {
+    toast(e.message === "token" ? "כפתור העדכון לא מורשה יותר (צריך לחדש את ההרשאה ב-GitHub)" :
+      e.message === "run" ? "הסריקה נכשלה הפעם, הבדיקה האוטומטית הבאה תנסה שוב" : "לא הצלחתי להתחיל עדכון, בדקי את החיבור לאינטרנט", 4500);
+  } finally {
+    refreshing = false; renderHeader(); setTimeout(() => progress(null), 1500);
+  }
+}
+$("refreshBtn").onclick = refreshNow;
 
-// ---- wire up ----
-document.querySelectorAll(".tab").forEach(t => t.onclick = () => showTab(t.dataset.tab));
-function seg(id, key, after) {
-  $(id).addEventListener("click", e => {
-    const b = e.target.closest("button"); if (!b) return;
-    ui[key] = key === "range" ? +b.dataset.v : b.dataset.v;
-    $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
-    after();
-  });
-}
-seg("range", "range", () => { ui.shown = PAGE; renderNews(); });
-seg("group", "group", () => { ui.source = ""; ui.shown = PAGE; renderNews(); });
-seg("tgChan", "tgChan", () => { ui.tgShown = PAGE; renderTg(); });
-$("q").oninput = () => { ui.shown = PAGE; renderNews(); };
-$("tq").oninput = () => { ui.tgShown = PAGE; renderTg(); };
-$("weak").onchange = () => { renderAll(); };
-$("markRead").onclick = () => { lastSeen = now(); localStorage.lastSeen = lastSeen; renderAll(); toast("הכל סומן כנקרא"); };
-$("refreshBtn").onclick = async () => { await fetch("/api/refresh"); toast("הבדיקה התחילה, זה לוקח כ-3 דקות"); setTimeout(load, 1500); };
+// ---------- logout ----------
 $("logoutBtn").onclick = () => { localStorage.removeItem("idfKey"); location.reload(); };
-$("notifyBtn").onclick = async () => {
-  if (!("Notification" in window)) return toast("הדפדפן לא תומך בהתראות");
-  const p = await Notification.requestPermission();
-  toast(p === "granted" ? "תקבלי התראה בכל אזכור חדש" : "ההתראות חסומות בדפדפן");
-  renderHeader();
-};
 
-const tabFromHash = () => showTab(["news", "tg", "social"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "news");
-window.onhashchange = tabFromHash;
+// ---------- install as an app ----------
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+const isPhone = /Android|iPhone|iPad/i.test(navigator.userAgent);
+let installEvt = null;
+if (!standalone && isPhone && !localStorage.installHidden) {
+  $("installHint").hidden = false;
+  $("installText").textContent = /iPhone|iPad/.test(navigator.userAgent)
+    ? 'בספארי: לחצי על כפתור השיתוף ⬆️ ואז "הוסף למסך הבית"'
+    : 'בכרום: תפריט ⋮ ואז "הוספה למסך הבית"';
+}
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("installBtn").hidden = false; $("installText").textContent = "פותחים בלחיצה אחת, כמו כל אפליקציה"; });
+$("installBtn").onclick = async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $("installHint").hidden = true; };
+$("installClose").onclick = () => { localStorage.installHidden = 1; $("installHint").hidden = true; };
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => { });
+
+// ---------- start ----------
 tabFromHash();
+renderHeader();
 load();
-setInterval(load, 30000);
+setInterval(() => { if (!refreshing && document.visibilityState === "visible") load(); }, 120000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !refreshing) load(); });
 setInterval(renderHeader, 60000);
 </script>
 </body>
