@@ -224,18 +224,20 @@ def tag_tones(now=None):
         return 0
     import anthropic
     client = anthropic.Anthropic()
-    model = os.environ.get("TONE_MODEL") or "claude-opus-5-5"
+    model = os.environ.get("TONE_MODEL") or "claude-haiku-5-5"  # chosen for cost (<$1/month); override with the TONE_MODEL repo variable
+    # server-side refusal fallback exists for Opus/Sonnet/Fable, not Haiku
+    fallback = {} if model.startswith("claude-haiku") else {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
+    create = client.beta.messages.create if fallback else client.messages.create
     done = 0
     todo = todo[:TONE_MAX_PER_RUN]
     for start in range(0, len(todo), TONE_BATCH):
         chunk = todo[start:start + TONE_BATCH]
         lines = "\n".join(f"{i}. [{m['source']}] {m['title']}" for i, m in enumerate(chunk))
         try:
-            resp = client.beta.messages.create(
+            resp = create(
                 model=model, max_tokens=8000, system=TONE_PROMPT,
                 output_config={"effort": "low", "format": {"type": "json_schema", "schema": TONE_SCHEMA}},
-                betas=["server-side-fallback-2026-07-01"], fallbacks="default",  # retry a policy decline on another model
-                messages=[{"role": "user", "content": lines}])
+                messages=[{"role": "user", "content": lines}], **fallback)
         except anthropic.APIError as e:
             print(f"tone tagging stopped: {type(e).__name__}")
             break

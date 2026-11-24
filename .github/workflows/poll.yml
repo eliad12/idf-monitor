@@ -28,7 +28,7 @@ jobs:
           DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}   # optional: powers the site's refresh button
           NEWS_WINDOW: ${{ inputs.window || '2d' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: tone tagging
-          TONE_MODEL: ${{ vars.TONE_MODEL }}                    # optional: defaults to claude-opus-5-5
+          TONE_MODEL: ${{ vars.TONE_MODEL }}                    # optional: defaults to claude-haiku-5-5
       - name: Save results (encrypted only)
         run: |
           git config user.name "github-actions[bot]"
