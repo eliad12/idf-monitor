@@ -3,7 +3,7 @@
 # Run: python idf_monitor.py   then open http://localhost:8000
 # One scan for static hosting (GitHub Actions): DATA_PASSWORD=... python idf_monitor.py --once  (needs: pip install cryptography)
 # Self-check: python idf_monitor.py --selftest
-import html, json, re, sys, threading, time, urllib.parse, urllib.request, webbrowser
+import html, json, os, re, sys, threading, time, urllib.parse, urllib.request, webbrowser
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -65,7 +65,9 @@ def fetch(url):
 
 def feed_url(domain, lang):
     q, hl, gl, ceid = lang
-    params = {"q": f"({q}) site:{domain} when:2d", "hl": hl, "gl": gl, "ceid": ceid}
+    # routine scans look 2 days back; a one-off NEWS_WINDOW=7d run backfills the week
+    window = os.environ.get("NEWS_WINDOW", "2d")
+    params = {"q": f"({q}) site:{domain} when:{window}", "hl": hl, "gl": gl, "ceid": ceid}
     return "https://news.google.com/rss/search?" + urllib.parse.urlencode(params)
 
 
@@ -105,12 +107,24 @@ def store(items):
             mentions.setdefault(it["link"], it)  # keep the first "found" time
 
 
+KEEP_DAYS = 8       # headline hits + Telegram: the app's "week" filter needs 7
+KEEP_WEAK_DAYS = 3  # body-only matches are noisy and ~4x as many; keep them short
+MAX_ITEMS = 6000    # shortcut: hard cap on the published file size, move to SQLite if she needs long history
+
+
+def prune(now=None):
+    now = now or time.time()
+    for k, m in list(mentions.items()):
+        if now - m["ts"] > (KEEP_DAYS if m.get("hit") else KEEP_WEAK_DAYS) * 86400:
+            del mentions[k]
+    if len(mentions) > MAX_ITEMS:
+        for k, _ in sorted(mentions.items(), key=lambda kv: kv[1]["ts"])[:-MAX_ITEMS]:
+            del mentions[k]
+
+
 def save():
     with lock:
-        # shortcut: keeps only the newest 4000 items, move to SQLite if she needs long history
-        if len(mentions) > 4000:
-            for k, _ in sorted(mentions.items(), key=lambda kv: kv[1]["ts"])[:-4000]:
-                del mentions[k]
+        prune()
         DB.write_text(json.dumps(mentions, ensure_ascii=False), "utf-8")
 
 
@@ -229,6 +243,15 @@ def selftest():
           '<div data-post="idf_telegram/56"><time datetime="2026-11-24T11:00:00+00:00"></time></div>')
     [t] = parse_telegram(tg, "TG", "idf_telegram")
     assert t["title"] == 'שורה"1\nשורה 2' and t["link"] == "https://t.me/idf_telegram/55" and t["kind"] == "telegram"
+    saved_state = dict(mentions)
+    mentions.clear()
+    day = 86400
+    mentions.update({"hit7": {"ts": 1000 * day - 7 * day, "hit": True}, "hit9": {"ts": 1000 * day - 9 * day, "hit": True},
+                     "weak2": {"ts": 1000 * day - 2 * day, "hit": False}, "weak4": {"ts": 1000 * day - 4 * day, "hit": False}})
+    prune(now=1000 * day)
+    assert sorted(mentions) == ["hit7", "weak2"], sorted(mentions)
+    mentions.clear()
+    mentions.update(saved_state)
     blob = encrypt("שלום".encode(), "pw", b"s" * 16)
     assert decrypt(blob, "pw") == ("שלום".encode(), b"s" * 16) and "שלום".encode() not in blob
     try:

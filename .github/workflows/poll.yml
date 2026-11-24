@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: "4-59/10 * * * *"   # off the top of the hour, when GitHub drops/delays most scheduled runs
   workflow_dispatch:
+    inputs:
+      window:
+        description: "How far back to search (2d routine, 7d to backfill the week)"
+        default: "2d"
 permissions:
   contents: write
 concurrency:
@@ -22,6 +26,7 @@ jobs:
         env:
           DATA_PASSWORD: ${{ secrets.DATA_PASSWORD }}
           DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}   # optional: powers the site's refresh button
+          NEWS_WINDOW: ${{ inputs.window || '2d' }}
       - name: Save results (encrypted only)
         run: |
           git config user.name "github-actions[bot]"

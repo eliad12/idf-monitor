@@ -147,8 +147,9 @@
   @keyframes up { from { transform: translate(-50%, 100%); } }
   @keyframes fade { from { opacity: 0; } }
   .seg { display: flex; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
-  .seg button { flex: 1; border: 0; background: none; padding: 8px 6px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--muted); }
+  .seg button { flex: 1; border: 0; background: none; padding: 8px 4px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--muted); white-space: nowrap; }
   .seg button[aria-pressed=true] { background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .hint { margin: 6px 2px 0; font-size: 12.5px; color: var(--muted); }
   .check { display: flex; gap: 10px; align-items: center; font-size: 15px; }
   .check input { width: 20px; height: 20px; accent-color: var(--brand-2); flex: none; }
   .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
@@ -283,7 +284,7 @@
       </div>
       <div class="stat-side">
         <div class="card mini gold"><span class="em">✨</span><div><b id="sNew">0</b><span>חדשות בשבילך</span></div></div>
-        <div class="card mini"><span class="em">🏆</span><div><b id="sTop" class="small">-</b><span>האתר שדיבר הכי הרבה על צה"ל ב-24 השעות האחרונות</span></div></div>
+        <div class="card mini"><span class="em">🏆</span><div><b id="sTop" class="small">-</b><span>הכי הרבה כתבות ב-24 שעות</span></div></div>
       </div>
     </div>
     <div class="warn" id="errors" hidden></div>
@@ -343,7 +344,8 @@
     <div class="grab"></div>
     <h3>סינון כתבות <button class="textbtn" id="resetFilters">איפוס</button></h3>
     <h4>מתי</h4>
-    <div class="seg" id="range"><button data-v="0" aria-pressed="true">הכל</button><button data-v="1">שעה</button><button data-v="6">6 שעות</button><button data-v="24">24 שעות</button></div>
+    <div class="seg" id="range"><button data-v="1">שעה</button><button data-v="24">24 שעות</button><button data-v="72">3 ימים</button><button data-v="168">שבוע</button><button data-v="0" aria-pressed="true">הכל</button></div>
+    <p class="hint">"הכל" מציג את כל מה שנשמר: כתבות מהשבוע האחרון.</p>
     <h4>איזה אתרים</h4>
     <div class="seg" id="group"><button data-v="" aria-pressed="true">הכל</button><button data-v="il">ישראלים</button><button data-v="world">בעולם</button></div>
     <h4>עד כמה מדויק</h4>
@@ -512,7 +514,8 @@ function renderNews() {
 
   const nFilters = (ui.range ? 1 : 0) + (ui.group ? 1 : 0) + ($("weak").checked ? 1 : 0);
   $("filterDot").hidden = !nFilters; $("filterDot").textContent = nFilters;
-  $("listCount").textContent = items.length ? `${items.length} כתבות` + (ui.source ? ` מ${ui.source}` : "") : "";
+  const rangeName = { 1: "בשעה האחרונה", 24: "ב-24 השעות האחרונות", 72: "ב-3 הימים האחרונים", 168: "בשבוע האחרון" }[ui.range] || "";
+  $("listCount").textContent = items.length ? `${items.length} כתבות` + (ui.source ? ` מ${ui.source}` : "") + (rangeName ? ` ${rangeName}` : "") : "";
 
   const first = !data.status.last_poll;
   $("newsList").replaceChildren(...(items.length ? withDays(items, ui.shown, () => { ui.shown += PAGE; renderNews(); })
@@ -526,7 +529,8 @@ function renderNews() {
   // last 24h, not "since midnight", so the card isn't empty right after midnight
   const per = {}; day.forEach(m => per[m.source] = (per[m.source] || 0) + 1);
   const top = Object.entries(per).sort((a, b) => b[1] - a[1])[0];
-  $("sTop").textContent = top ? `${top[0]} · ${top[1]} כתבות` : "אין עדיין";
+  $("sTop").textContent = top ? top[0] : "אין עדיין";
+  $("sTop").title = top ? `${top[1]} כתבות` : "";
   const hours = Array(24).fill(0);
   day.forEach(m => { const i = 23 - Math.floor((now() - m.ts) / 3600); if (i >= 0 && i < 24) hours[i]++; });
   const max = Math.max(...hours, 1);
@@ -639,7 +643,8 @@ seg("group", v => { ui.group = v; ui.source = ""; ui.shown = PAGE; renderNews();
 seg("themeSeg", v => { localStorage.theme = v; applyTheme(); });
 $("resetFilters").onclick = () => {
   ui.range = 0; ui.group = ""; ui.source = ""; $("weak").checked = false;
-  ["range", "group"].forEach(id => $(id).querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === 0)));
+  $("range").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === "0"));
+  $("group").querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === 0));
   renderAll();
 };
 $("weak").onchange = renderAll;
