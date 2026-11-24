@@ -1,7 +1,7 @@
 name: scan
 on:
   schedule:
-    - cron: "*/10 * * * *"   # GitHub often starts these 10-30 min late
+    - cron: "4-59/10 * * * *"   # off the top of the hour, when GitHub drops/delays most scheduled runs
   workflow_dispatch:
 permissions:
   contents: write
