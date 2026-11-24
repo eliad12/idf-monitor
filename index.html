@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ניטור אזכורי צה"ל</title>
+<style>
+  :root {
+    --bg: #f3f4f6; --card: #fff; --ink: #1a1d21; --muted: #5f6670; --line: #e3e6ea;
+    --brand: #2f4a3a; --brand-2: #3f6b52; --il: #1f5fa8; --world: #7a3fa0; --tg: #1e88c7; --new: #e0a100;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 "Segoe UI", system-ui, Arial, sans-serif; }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid #f0b400; outline-offset: 2px; }
+
+  /* top bar */
+  .top { background: var(--brand); color: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  .top-in { max-width: 1100px; margin: auto; padding: 12px 16px 0; }
+  .row1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 21px; margin: 0; font-weight: 700; }
+  .pill { font-size: 13px; background: rgba(255,255,255,.14); padding: 3px 10px; border-radius: 99px; display: inline-flex; gap: 6px; align-items: center; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #6fdc8c; }
+  .pill.busy .dot { background: #ffd45c; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .spacer { flex: 1; }
+  .btn { border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; padding: 6px 12px; border-radius: 8px; }
+  .btn:hover { background: rgba(255,255,255,.12); }
+  .tabs { display: flex; gap: 4px; margin-top: 10px; overflow-x: auto; }
+  .tab { background: none; border: 0; color: #d7e3db; padding: 10px 14px; border-bottom: 3px solid transparent; font-weight: 600; white-space: nowrap; }
+  .tab[aria-selected=true] { color: #fff; border-bottom-color: #f0b400; }
+  .count { background: rgba(255,255,255,.18); border-radius: 99px; padding: 0 8px; font-size: 13px; margin-inline-start: 4px; }
+  .count.hot { background: var(--new); color: #1a1d21; }
+
+  main { max-width: 1100px; margin: 18px auto 60px; padding: 0 16px; }
+  [hidden] { display: none !important; }
+
+  /* summary */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--card); border-radius: 12px; padding: 12px 16px; border: 1px solid var(--line); }
+  .stat b { display: block; font-size: 26px; line-height: 1.2; }
+  .stat span { color: var(--muted); font-size: 14px; }
+
+  /* filters */
+  .filters { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .search { flex: 1 1 220px; padding: 8px 12px; border: 1px solid #cfd4da; border-radius: 8px; }
+  .seg { display: inline-flex; border: 1px solid #cfd4da; border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; background: #fff; padding: 7px 12px; color: var(--ink); }
+  .seg button + button { border-inline-start: 1px solid #cfd4da; }
+  .seg button[aria-pressed=true] { background: var(--brand-2); color: #fff; }
+  .check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
+  .link-btn { background: none; border: 0; color: var(--brand-2); text-decoration: underline; padding: 4px; font-size: 14px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .chip { border: 1px solid #cfd4da; background: #fff; border-radius: 99px; padding: 4px 12px; font-size: 14px; color: var(--ink); }
+  .chip small { color: var(--muted); margin-inline-start: 4px; }
+  .chip.zero { opacity: .45; }
+  .chip[aria-pressed=true] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .chip[aria-pressed=true] small { color: #ccc; }
+
+  /* list */
+  .day { font-size: 14px; font-weight: 700; color: var(--muted); margin: 18px 4px 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; border-inline-start: 5px solid var(--line); }
+  .card.new { border-inline-start-color: var(--new); }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .badge { color: #fff; font-weight: 600; padding: 1px 9px; border-radius: 6px; font-size: 13px; }
+  .badge.il { background: var(--il); } .badge.world { background: var(--world); } .badge.tg { background: var(--tg); }
+  .newtag { background: var(--new); color: #1a1d21; font-weight: 700; padding: 0 7px; border-radius: 6px; }
+  .card a.title { color: var(--ink); text-decoration: none; font-size: 17px; font-weight: 600; unicode-bidi: plaintext; display: block; }
+  .card a.title:hover { text-decoration: underline; }
+  .tgtext { white-space: pre-wrap; unicode-bidi: plaintext; font-size: 16px; }
+  .tgtext.clamp { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .actions { margin-inline-start: auto; display: flex; gap: 4px; }
+  .actions button, .actions a { border: 1px solid var(--line); background: #fafbfc; color: var(--muted); border-radius: 6px; padding: 2px 9px; font-size: 13px; text-decoration: none; }
+  .actions button:hover, .actions a:hover { color: var(--ink); border-color: #cfd4da; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 10px; background: var(--card); border-radius: 12px; border: 1px dashed #cfd4da; }
+  .more { display: block; margin: 14px auto; padding: 8px 20px; border-radius: 8px; border: 1px solid #cfd4da; background: #fff; }
+  .errors { font-size: 13px; color: #8a4b00; background: #fff6e0; border: 1px solid #f2d899; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
+
+  /* social */
+  .note { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .panel h3 { margin: 0; font-size: 16px; padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .panel h3 a { font-size: 13px; font-weight: 600; color: var(--brand-2); }
+  .panel .body { height: 560px; overflow: auto; padding: 0 8px; }
+  .fallback { text-align: center; padding: 28px 16px; color: var(--muted); }
+  .fallback p { margin: 0 0 14px; }
+  .fallback .big { display: inline-block; background: var(--ink); color: #fff; text-decoration: none; padding: 10px 22px; border-radius: 10px; font-weight: 600; }
+  .fallback small { display: block; margin-top: 12px; }
+  .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 14px; }
+  .links a { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; color: var(--ink); text-decoration: none; }
+  .links a:hover { border-color: var(--brand-2); }
+  .links small { display: block; color: var(--muted); }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
+  @media (max-width: 600px) { h1 { font-size: 18px; } .stat b { font-size: 22px; } .actions { margin-inline-start: 0; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="row1">
+      <h1>ניטור אזכורי צה"ל</h1>
+      <span class="pill" id="pill"><span class="dot"></span><span id="pillText">טוען...</span></span>
+      <span class="spacer"></span>
+      <button class="btn" id="notifyBtn" title="קבלת התראה במחשב כשיש כתבה חדשה">🔔 התראות</button>
+      <button class="btn" id="refreshBtn">↻ רענן עכשיו</button>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="news" aria-selected="true">📰 כתבות בתקשורת <span class="count" id="cNews">0</span></button>
+      <button class="tab" role="tab" data-tab="tg" aria-selected="false">✈️ טלגרם צה"ל <span class="count" id="cTg">0</span></button>
+      <button class="tab" role="tab" data-tab="social" aria-selected="false">📱 רשתות חברתיות</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- NEWS -->
+  <section id="tab-news" role="tabpanel">
+    <div class="stats">
+      <div class="stat"><b id="sDay">0</b><span>כתבות ב-24 השעות האחרונות</span></div>
+      <div class="stat"><b id="sNew">0</b><span>חדשות מאז שסימנת "נקרא"</span></div>
+      <div class="stat"><b id="sTop">-</b><span>האתר שדיבר הכי הרבה על צה"ל היום</span></div>
+    </div>
+    <div class="errors" id="errors" hidden></div>
+    <div class="filters">
+      <input class="search" id="q" type="search" placeholder="🔍 חיפוש בכותרות (למשל: רמטכ&quot;ל, עזה, לבנון)" aria-label="חיפוש בכותרות">
+      <div class="seg" id="range" aria-label="טווח זמן">
+        <button data-v="1">שעה</button><button data-v="6">6 שעות</button><button data-v="24">24 שעות</button><button data-v="0" aria-pressed="true">הכל</button>
+      </div>
+      <div class="seg" id="group" aria-label="סוג אתר">
+        <button data-v="" aria-pressed="true">הכל</button><button data-v="il">ישראל</button><button data-v="world">עולם</button>
+      </div>
+      <label class="check"><input type="checkbox" id="weak"> הצג גם כתבות שצה"ל רק מוזכר בתוכן שלהן</label>
+      <button class="link-btn" id="markRead">✓ סמן הכל כנקרא</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div id="newsList"></div>
+  </section>
+
+  <!-- TELEGRAM -->
+  <section id="tab-tg" role="tabpanel" hidden>
+    <p class="note">הודעות מערוצי הטלגרם הרשמיים של צה"ל. לחיצה על הודעה פותחת או מקצרת אותה.</p>
+    <div class="filters">
+      <input class="search" id="tq" type="search" placeholder="🔍 חיפוש בהודעות" aria-label="חיפוש בהודעות">
+      <div class="seg" id="tgChan"></div>
+    </div>
+    <div id="tgList"></div>
+  </section>
+
+  <!-- SOCIAL -->
+  <section id="tab-social" role="tabpanel" hidden>
+    <p class="note">הפיד של כל חשבון מוצג כאן ישירות. X מציג לפעמים פיד ריק למי שלא מחובר לחשבון. במקרה כזה לחצו "פתח ב-X".</p>
+    <div class="grid" id="socialGrid"></div>
+    <h2 style="font-size:17px;margin:24px 0 0">קישורים מהירים</h2>
+    <div class="links">
+      <a href="https://www.instagram.com/idf/" target="_blank" rel="noopener">📸 אינסטגרם צה"ל<small>@idf</small></a>
+      <a href="https://www.tiktok.com/@idf" target="_blank" rel="noopener">🎵 טיקטוק צה"ל<small>@idf</small></a>
+      <a href="https://t.me/idf_telegram" target="_blank" rel="noopener">✈️ טלגרם צה"ל (עברית)<small>t.me/idf_telegram</small></a>
+      <a href="https://t.me/idfofficial" target="_blank" rel="noopener">✈️ Telegram IDF (English)<small>t.me/idfofficial</small></a>
+      <a href="https://x.com/idfonline" target="_blank" rel="noopener">𝕏 צה"ל בעברית<small>@idfonline</small></a>
+      <a href="https://x.com/IDF" target="_blank" rel="noopener">𝕏 IDF English<small>@IDF</small></a>
+      <a href="https://x.com/AvichayAdraee" target="_blank" rel="noopener">𝕏 דובר צה"ל לערבית<small>@AvichayAdraee</small></a>
+      <a href="https://www.idf.il" target="_blank" rel="noopener">🌐 אתר צה"ל<small>idf.il</small></a>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const PAGE = 150;
+let data = { items: [], status: {}, sources: [], telegram: [] };
+let lastSeen = +localStorage.lastSeen || 0;
+let maxFound = 0;              // newest "found" time seen by this page, for notifications
+const ui = { range: 0, group: "", source: "", tgChan: "", shown: PAGE, tgShown: PAGE, tab: "news" };
+const groupOf = {};
+
+// ---- time helpers ----
+const now = () => Date.now() / 1000;
+function ago(ts) {
+  const s = now() - ts;
+  if (s < 90) return "עכשיו";
+  if (s < 3600) return `לפני ${Math.round(s / 60)} דק'`;
+  if (s < 86400) return `לפני ${Math.round(s / 3600)} שע'`;
+  return new Date(ts * 1000).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" });
+}
+const full = ts => new Date(ts * 1000).toLocaleString("he-IL", { dateStyle: "full", timeStyle: "short" });
+function dayLabel(ts) {
+  const d = new Date(ts * 1000), t = new Date(); t.setHours(0, 0, 0, 0);
+  const diff = Math.round((t - new Date(d).setHours(0, 0, 0, 0)) / 86400000);
+  return diff <= 0 ? "היום" : diff === 1 ? "אתמול" : d.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+}
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+// ---- shared card pieces ----
+function meta(m, badgeCls) {
+  const row = el("div", "meta");
+  row.append(el("span", "badge " + badgeCls, m.source));
+  const t = el("span", null, ago(m.ts)); t.title = full(m.ts); row.append(t);
+  if (m.found > lastSeen) row.append(el("span", "newtag", "חדש"));
+  const act = el("span", "actions");
+  const copy = el("button", null, "העתק");
+  copy.title = "העתקת כותרת + קישור, להדבקה בדיווח";
+  copy.onclick = () => navigator.clipboard.writeText(`${m.source}: ${m.title}\n${m.link}`).then(() => toast("הועתק"));
+  const open = el("a", null, "פתח ↗"); open.href = m.link; open.target = "_blank"; open.rel = "noopener";
+  act.append(copy, open); row.append(act);
+  return row;
+}
+function withDays(items, makeCard, limit, onMore) {
+  const out = []; let day = "";
+  items.slice(0, limit).forEach(m => {
+    const d = dayLabel(m.ts);
+    if (d !== day) { out.push(el("div", "day", d)); day = d; }
+    out.push(makeCard(m));
+  });
+  if (items.length > limit) {
+    const b = el("button", "more", `הצג עוד (${items.length - limit} נוספות)`);
+    b.onclick = onMore; out.push(b);
+  }
+  return out;
+}
+const empty = text => [el("div", "empty", text)];
+
+// ---- news tab ----
+function newsBase() { return data.items.filter(m => m.kind !== "telegram" && (m.hit || $("weak").checked)); }
+function renderNews() {
+  const base = newsBase(), q = $("q").value.trim().toLowerCase();
+  const since = ui.range ? now() - ui.range * 3600 : 0;
+  const inScope = base.filter(m => m.ts >= since && (!ui.group || groupOf[m.source] === ui.group) && (!q || m.title.toLowerCase().includes(q)));
+  const items = inScope.filter(m => !ui.source || m.source === ui.source);
+
+  // source chips count what the other filters leave
+  const counts = {}; inScope.forEach(m => counts[m.source] = (counts[m.source] || 0) + 1);
+  const names = data.sources.filter(s => !ui.group || s.group === ui.group).map(s => s.name);
+  names.sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+  const all = el("button", "chip", "כל האתרים"); all.setAttribute("aria-pressed", !ui.source);
+  all.onclick = () => { ui.source = ""; ui.shown = PAGE; renderNews(); };
+  $("chips").replaceChildren(all, ...names.map(n => {
+    const c = el("button", "chip" + (counts[n] ? "" : " zero"), n);
+    c.append(el("small", null, counts[n] || 0));
+    c.setAttribute("aria-pressed", ui.source === n);
+    c.onclick = () => { ui.source = ui.source === n ? "" : n; ui.shown = PAGE; renderNews(); };
+    return c;
+  }));
+
+  const card = m => {
+    const c = el("article", "card" + (m.found > lastSeen ? " new" : ""));
+    const a = el("a", "title", m.title); a.href = m.link; a.target = "_blank"; a.rel = "noopener";
+    c.append(meta(m, groupOf[m.source] || "world"), a);
+    return c;
+  };
+  const first = !data.status.last_poll;
+  $("newsList").replaceChildren(...(items.length ? withDays(items, card, ui.shown, () => { ui.shown += PAGE; renderNews(); })
+    : empty(first ? "האיסוף הראשון רץ עכשיו ולוקח כ-3 דקות. הכתבות יופיעו כאן אוטומטית." : "אין כתבות שמתאימות לסינון הזה. נסו טווח זמן רחב יותר או אתר אחר.")));
+
+  // stats
+  const day = base.filter(m => m.ts >= now() - 86400);
+  $("sDay").textContent = day.length;
+  $("sNew").textContent = base.filter(m => m.found > lastSeen).length;
+  const per = {}; base.filter(m => dayLabel(m.ts) === "היום").forEach(m => per[m.source] = (per[m.source] || 0) + 1);
+  const top = Object.entries(per).sort((a, b) => b[1] - a[1])[0];
+  $("sTop").textContent = top ? `${top[0]} (${top[1]})` : "-";
+}
+
+// ---- telegram tab ----
+function renderTg() {
+  const q = $("tq").value.trim().toLowerCase();
+  const items = data.items.filter(m => m.kind === "telegram" && (!ui.tgChan || m.source === ui.tgChan) && (!q || m.title.toLowerCase().includes(q)));
+  const card = m => {
+    const c = el("article", "card" + (m.found > lastSeen ? " new" : ""));
+    const t = el("div", "tgtext clamp", m.title); t.onclick = () => t.classList.toggle("clamp");
+    c.append(meta(m, "tg"), t);
+    return c;
+  };
+  $("tgList").replaceChildren(...(items.length ? withDays(items, card, ui.tgShown, () => { ui.tgShown += PAGE; renderTg(); })
+    : empty("אין עדיין הודעות טלגרם. הן ייאספו תוך 2 דקות.")));
+}
+function buildTgChannels() {
+  const seg = $("tgChan");
+  const mk = (label, v) => { const b = el("button", null, label); b.dataset.v = v; b.setAttribute("aria-pressed", ui.tgChan === v); return b; };
+  seg.replaceChildren(mk("כל הערוצים", ""), ...data.telegram.map(t => mk(t.name, t.name)));
+}
+
+// ---- social tab (embeds load only when opened) ----
+let socialLoaded = false;
+function loadSocial() {
+  if (socialLoaded) return; socialLoaded = true;
+  const panels = [
+    { h: 'X · צה"ל בעברית', url: "https://x.com/idfonline", open: "פתח ב-X", html: '<a class="twitter-timeline" data-lang="he" data-height="540" href="https://twitter.com/idfonline">טוען פיד...</a>' },
+    { h: "X · IDF English", url: "https://x.com/IDF", open: "פתח ב-X", html: '<a class="twitter-timeline" data-height="540" href="https://twitter.com/IDF">Loading...</a>' },
+    { h: 'X · דובר צה"ל לערבית', url: "https://x.com/AvichayAdraee", open: "פתח ב-X", html: '<a class="twitter-timeline" data-lang="ar" data-height="540" href="https://twitter.com/AvichayAdraee">טוען פיד...</a>' },
+    { h: 'טיקטוק צה"ל', url: "https://www.tiktok.com/@idf", open: "פתח בטיקטוק", html: '<blockquote class="tiktok-embed" cite="https://www.tiktok.com/@idf" data-unique-id="idf" data-embed-type="creator" style="max-width:780px;min-width:288px"><section><a target="_blank" href="https://www.tiktok.com/@idf">@idf</a></section></blockquote>' },
+  ];
+  $("socialGrid").replaceChildren(...panels.map(p => {
+    const box = el("div", "panel"), h = el("h3", null, p.h), a = el("a", null, p.open + " ↗");
+    a.href = p.url; a.target = "_blank"; a.rel = "noopener"; h.append(a);
+    const body = el("div", "body"); body.innerHTML = p.html;
+    box.append(h, body); return box;
+  }));
+  for (const src of ["https://platform.twitter.com/widgets.js", "https://www.tiktok.com/embed.js"]) {
+    const s = document.createElement("script"); s.src = src; s.async = true; document.body.append(s);
+  }
+  // X often renders an empty feed for logged-out visitors: swap the blank box for a clear button
+  setTimeout(() => document.querySelectorAll("#socialGrid .panel").forEach((box, i) => {
+    const p = panels[i], frame = box.querySelector("iframe");
+    if (!p.url.includes("x.com") || (frame && frame.offsetHeight > 80)) return;
+    const body = box.querySelector(".body"), fb = el("div", "fallback");
+    fb.append(el("p", null, "X לא מציג את הפיד בתוך האתר כשלא מחוברים לחשבון X בדפדפן הזה."));
+    const a = el("a", "big", p.open + " ↗"); a.href = p.url; a.target = "_blank"; a.rel = "noopener";
+    fb.append(a, el("small", null, "אחרי התחברות ל-X ורענון הדף, הפיד אמור להופיע כאן."));
+    body.replaceChildren(fb); body.style.height = "auto";
+  }), 9000);
+}
+
+// ---- header, tabs, status ----
+function renderHeader() {
+  const s = data.status, busy = s.polling || !s.last_poll;
+  $("pill").classList.toggle("busy", busy);
+  $("pillText").textContent = busy ? "אוסף כתבות..." : `עודכן ${ago(s.last_poll)} · ` + (s.live ? "בדיקה כל 10 דק'" : "מתעדכן אוטומטית כל 10–30 דק'");
+  const newsNew = newsBase().filter(m => m.found > lastSeen).length;
+  const tgNew = data.items.filter(m => m.kind === "telegram" && m.found > lastSeen).length;
+  $("cNews").textContent = newsNew || newsBase().length; $("cNews").classList.toggle("hot", newsNew > 0);
+  $("cTg").textContent = tgNew || data.items.filter(m => m.kind === "telegram").length; $("cTg").classList.toggle("hot", tgNew > 0);
+  $("cNews").title = newsNew ? "חדשות" : "סה\"כ"; $("cTg").title = tgNew ? "חדשות" : "סה\"כ";
+  document.title = (newsNew + tgNew ? `(${newsNew + tgNew}) ` : "") + 'ניטור אזכורי צה"ל';
+  const errs = s.errors || [];
+  $("errors").hidden = !errs.length;
+  $("errors").textContent = errs.length ? `⚠️ ${errs.length} מקורות לא נטענו בבדיקה האחרונה (ינסה שוב בבדיקה הבאה): ${errs.map(e => e.split(":")[0]).join(", ")}` : "";
+  $("notifyBtn").textContent = ("Notification" in window && Notification.permission === "granted") ? "🔔 התראות פעילות" : "🔔 התראות";
+}
+function renderAll() { renderHeader(); renderNews(); renderTg(); }
+
+function showTab(name) {
+  ui.tab = name;
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
+  ["news", "tg", "social"].forEach(n => $("tab-" + n).hidden = n !== name);
+  if (name === "social") loadSocial();
+  location.hash = name;
+}
+
+function notifyNew(fresh) {
+  if (!fresh.length || !("Notification" in window) || Notification.permission !== "granted") return;
+  const n = new Notification(`${fresh.length} אזכורים חדשים של צה"ל`, { body: `${fresh[0].source}: ${fresh[0].title}`.slice(0, 180), tag: "idf-monitor" });
+  n.onclick = () => { window.focus(); n.close(); };
+}
+
+async function load() {
+  try {
+    data = await (await fetch("data.json?t=" + Date.now(), { cache: "no-store" })).json();
+  } catch { $("pillText").textContent = "הנתונים עוד לא זמינים, ננסה שוב בעוד רגע"; return; }
+  $("refreshBtn").hidden = !data.status.live;  // the hosted copy has no server to trigger a scan
+  data.sources.forEach(s => groupOf[s.name] = s.group);
+  data.telegram.forEach(t => groupOf[t.name] = "tg");
+  if (!$("tgChan").children.length) buildTgChannels();
+  const relevant = data.items.filter(m => m.hit);
+  if (maxFound) notifyNew(relevant.filter(m => m.found > maxFound));
+  maxFound = Math.max(maxFound, ...relevant.map(m => m.found), 1);
+  renderAll();
+}
+
+let toastT;
+function toast(text) {
+  let t = document.querySelector(".toast"); if (!t) { t = el("div", "toast"); document.body.append(t); }
+  t.textContent = text; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1500);
+}
+
+// ---- wire up ----
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => showTab(t.dataset.tab));
+function seg(id, key, after) {
+  $(id).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    ui[key] = key === "range" ? +b.dataset.v : b.dataset.v;
+    $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    after();
+  });
+}
+seg("range", "range", () => { ui.shown = PAGE; renderNews(); });
+seg("group", "group", () => { ui.source = ""; ui.shown = PAGE; renderNews(); });
+seg("tgChan", "tgChan", () => { ui.tgShown = PAGE; renderTg(); });
+$("q").oninput = () => { ui.shown = PAGE; renderNews(); };
+$("tq").oninput = () => { ui.tgShown = PAGE; renderTg(); };
+$("weak").onchange = () => { renderAll(); };
+$("markRead").onclick = () => { lastSeen = now(); localStorage.lastSeen = lastSeen; renderAll(); toast("הכל סומן כנקרא"); };
+$("refreshBtn").onclick = async () => { await fetch("/api/refresh"); toast("הבדיקה התחילה, זה לוקח כ-3 דקות"); setTimeout(load, 1500); };
+$("notifyBtn").onclick = async () => {
+  if (!("Notification" in window)) return toast("הדפדפן לא תומך בהתראות");
+  const p = await Notification.requestPermission();
+  toast(p === "granted" ? "תקבלי התראה בכל אזכור חדש" : "ההתראות חסומות בדפדפן");
+  renderHeader();
+};
+
+const tabFromHash = () => showTab(["news", "tg", "social"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "news");
+window.onhashchange = tabFromHash;
+tabFromHash();
+load();
+setInterval(load, 30000);
+setInterval(renderHeader, 60000);
+</script>
+</body>
+</html>
