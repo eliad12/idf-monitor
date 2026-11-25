@@ -1052,7 +1052,7 @@ function renderHeader() {
   $("botRow").hidden = !(b && b.username && b.code);
   if (b && b.username && b.code) $("botJoin").href = `https://t.me/${b.username}?start=${encodeURIComponent(b.code)}`;
   $("refreshBtn").classList.toggle("spinning", refreshing);
-  $("autoHint").textContent = s.live ? "בדיקה כל 10 דקות, וטלגרם כל 2 דקות" : "בדיקה אוטומטית בערך כל 10–30 דקות" + (data.refresh && data.refresh.token ? ", ועוד בכל לחיצה על כפתור הרענון למעלה" : "");
+  $("autoHint").textContent = s.live ? "בדיקה כל 10 דקות, וטלגרם כל 2 דקות" : "בדיקה אוטומטית כל 10 דקות" + (data.refresh && data.refresh.token ? ", ועוד בכל לחיצה על כפתור הרענון למעלה" : "");
 }
 function setCount(id, fresh, total) {
   const c = $(id); c.textContent = fresh || total; c.classList.toggle("hot", fresh > 0); c.classList.toggle("quiet", !fresh);
