@@ -60,7 +60,7 @@ jobs:
       - name: Build the site folder (encrypted data only)
         run: |
           mkdir site
-          cp index.html sw.js manifest.webmanifest stories.js icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png data.enc site/
+          cp index.html sw.js manifest.webmanifest stories.js hub.js hub.css icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png data.enc site/
           if [ -f data_hfc.enc ]; then cp data_hfc.enc site/; fi
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -400,6 +400,7 @@
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
   .toast { position: fixed; bottom: calc(20px + var(--nav-h)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 12px; font-size: 14.5px; font-weight: 600; z-index: 60; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100% - 32px); text-align: center; }
 </style>
+<link rel="stylesheet" href="hub.css">
 </head>
 <body>
 
@@ -410,7 +411,7 @@
     <h1>היי מיכלי 👋</h1>
     <p>לאן נכנסים היום?</p>
     <a class="sys-card" href="?s=idf#news"><span class="em">📰</span><span class="tx"><b>ניטור כתבות צה"ל</b><small>כל אזכור של צה"ל בתקשורת, בטלגרם וברשתות</small></span><span class="go">←</span></a>
-    <a class="sys-card hfc" href="?s=hfc#news"><span class="em">🚨</span><span class="tx"><b>פיקוד העורף</b><small>סיקור, התרעות וערוצי פיקוד העורף</small></span><span class="go">←</span></a>
+    <a class="sys-card hfc" href="?s=hfc#home"><span class="em">🚨</span><span class="tx"><b>פיקוד העורף</b><small>משימות, אנשי קשר, ידע, תבניות ומעקב תקשורת</small></span><span class="go">←</span></a>
     <p class="note-lock">🔒 לכל מערכת סיסמה משלה</p>
   </div>
 </div>
@@ -653,6 +654,7 @@
 </div>
 
 <script src="stories.js"></script>
+<script src="hub.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 // ---- two systems in one app: the IDF news monitor and the Home Front Command system, each with its own
@@ -874,7 +876,7 @@ function renderNews() {
 let alShown = 8;
 function renderAlerts() {
   const list = (data.alerts || []).filter(a => !a.drill);
-  $("alertsCard").hidden = !(SYS.id === "hfc" && data.alerts);
+  $("alertsCard").hidden = !(SYS.id === "hfc" && data.alerts && localStorage[KEY("showAlerts")] === "1");
   if ($("alertsCard").hidden) return;
   const n24 = list.filter(a => now() - a.ts < 86400).length, n7 = list.filter(a => now() - a.ts < 7 * 86400).length;
   const last = list[0];
@@ -1174,16 +1176,20 @@ function setCount(id, fresh, total) {
 function renderAll() { renderHeader(); setHeadH(); renderNews(); renderTg(); renderSaved(); if (!$("tab-trends").hidden) renderTrends(); }
 
 // ---------- tabs ----------
+const HUB = () => SYS && SYS.id === "hfc" && window.Hub;
 function showTab(name) {
-  document.querySelectorAll(".nav button").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
-  ["news", "tg", "trends", "saved", "social"].forEach(n => $("tab-" + n).hidden = n !== name);
+  if (!$("tab-" + name)) name = HUB() ? "home" : "news";
+  const navName = HUB() ? Hub.navFor(name) : name;
+  document.querySelectorAll(".nav button").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === navName));
+  document.querySelectorAll("main > section[role=tabpanel]").forEach(sec => sec.hidden = sec.id !== "tab-" + name);
   if (name === "social") loadSocial();
   if (name === "trends") renderTrends();
   if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name);
+  if (HUB()) Hub.onTab(name);
   scrollTo({ top: 0 });
 }
 document.querySelectorAll(".nav button").forEach(t => t.onclick = () => showTab(t.dataset.tab));
-const tabFromHash = () => showTab(["news", "tg", "trends", "saved", "social"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "news");
+const tabFromHash = () => showTab(location.hash.slice(1));
 window.onhashchange = tabFromHash;
 
 // ---------- sheets ----------
@@ -1324,6 +1330,7 @@ function askPassword(enc) {
           const raw = new Uint8Array(await crypto.subtle.exportKey("raw", key));
           localStorage[KEY("idfKey")] = JSON.stringify({ salt: enc.salt, raw: btoa(String.fromCharCode(...raw)) });
         }
+        if (HUB()) await Hub.onPassword($("pw").value, $("remember").checked);
         $("lock").hidden = true; $("pw").value = "";
         resolve({ unlock: { salt: enc.salt, key }, result });
       } catch { $("lockErr").textContent = "הסיסמה לא נכונה, נסי שוב"; $("pw").select(); }
@@ -1350,7 +1357,7 @@ async function getData(fresh) {
   if (r.status === 404 && SYS.id === "hfc") throw new Error("not-set-up");   // its first scan hasn't run yet
   if (r.ok) { try { enc = await r.json(); } catch { } }
   $("logoutRow").hidden = !(enc && enc.ct);
-  if (enc && enc.ct) return decryptData(enc);
+  if (enc && enc.ct) { lastEnc = enc; return decryptData(enc); }
   return (await fetch("data.json?t=" + Date.now(), { cache: "no-store" })).json();
 }
 
@@ -1383,7 +1390,17 @@ async function load(fresh = false) {
     $("newPillTop").hidden = false;
   }
   renderAll();
+  if (HUB()) Hub.render();
 }
+
+let lastEnc = null;
+/** True when `pw` is the password of the open system (compares derived keys; nothing is stored). */
+window.verifyAppPassword = async pw => {
+  if (!lastEnc || !unlocked) return false;
+  const a = new Uint8Array(await crypto.subtle.exportKey("raw", await deriveKey(pw, lastEnc)));
+  const b = new Uint8Array(await crypto.subtle.exportKey("raw", unlocked.key));
+  return a.length === b.length && a.every((x, i) => x === b[i]);
+};
 
 // ---------- "new articles" pill, back to top, pull to refresh ----------
 let holdList = false, pendingNew = 0;
@@ -1518,7 +1535,7 @@ async function refreshNow() {
 $("refreshBtn").onclick = refreshNow;
 
 // ---------- logout ----------
-$("logoutBtn").onclick = () => { localStorage.removeItem(KEY("idfKey")); location.reload(); };
+$("logoutBtn").onclick = () => { localStorage.removeItem(KEY("idfKey")); if (HUB()) Hub.logout(); location.reload(); };
 
 // ---------- install as an app ----------
 const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
@@ -1540,6 +1557,7 @@ if (!SYS) {
   $("chooser").hidden = false;   // no system picked: show the two doors
 } else {
   applySystem();
+  if (HUB()) Hub.init();   // creates its panels synchronously, then restores a remembered key
   tabFromHash();
   renderHeader();
   load();
