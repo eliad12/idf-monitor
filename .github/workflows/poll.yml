@@ -1,20 +1,29 @@
 name: scan
 on:
   schedule:
-    - cron: "4-59/10 * * * *"   # off the top of the hour, when GitHub drops/delays most scheduled runs
+    - cron: "4-59/10 * * * *"   # GitHub runs these rarely on free repos; cron-job.org triggers workflow_dispatch every 10 min
   workflow_dispatch:
     inputs:
       window:
         description: "How far back to search (2d routine, 7d to backfill the week)"
         default: "2d"
+  push:
+    branches: [main]            # code changes go live right away
+# The site is published straight from this job (Pages source = GitHub Actions), so the
+# encrypted data never piles up in git history; each run continues from the live data.enc.
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 concurrency:
   group: scan
 jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,6 +31,12 @@ jobs:
           python-version: "3.12"
       - run: pip install -q cryptography anthropic
       - run: python idf_monitor.py --selftest
+      - name: Continue from the data that is live now
+        run: |
+          url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/data.enc?t=$(date +%s)"
+          code=$(curl -sS -o data.enc -w '%{http_code}' "$url")
+          if [ "$code" = 404 ]; then rm -f data.enc; echo "no published data yet: starting fresh"
+          elif [ "$code" != 200 ]; then echo "could not read the live data (HTTP $code); stopping so history is not overwritten"; exit 1; fi
       - run: python idf_monitor.py --once
         env:
           DATA_PASSWORD: ${{ secrets.DATA_PASSWORD }}
@@ -30,11 +45,12 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: tone tagging
           TONE_MODEL: ${{ vars.TONE_MODEL }}                    # optional: defaults to claude-haiku-5-5
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }} # optional: alert bot
-      - name: Save results (encrypted only)
+      - name: Build the site folder (encrypted data only)
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.enc
-          git diff --cached --quiet && exit 0
-          git commit -m "Update mentions"
-          git pull --rebase && git push
+          mkdir site
+          cp index.html sw.js manifest.webmanifest stories.js icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png data.enc site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

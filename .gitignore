@@ -1,5 +1,6 @@
 .claude/
 __pycache__/
-# plaintext data stays local; only the encrypted data.enc is published
+# data is never committed: the scan workflow publishes the encrypted data.enc straight to the site
 mentions.json
 data.json
+data.enc
