@@ -1,0 +1,27 @@
+name: heartbeat
+# GitHub only runs "schedule" a couple of times a day on this repo, so this job is the clock:
+# it starts a scan every 10 minutes, and before the 6-hour job limit hands over to a fresh copy of itself.
+# GITHUB_TOKEN may start workflow_dispatch runs, so no personal token is needed.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"   # restarts the chain if it ever breaks; ignored while one is already queued
+permissions:
+  actions: write
+concurrency:
+  group: heartbeat           # at most one running + one queued
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - name: Start a scan every 10 minutes, then hand over
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          end=$((SECONDS + 345*60))
+          while [ $SECONDS -lt $end ]; do
+            gh workflow run poll.yml --repo "$GITHUB_REPOSITORY" || echo "could not start a scan, trying again next round"
+            sleep 600
+          done
+          gh workflow run heartbeat.yml --repo "$GITHUB_REPOSITORY"
