@@ -1,7 +1,7 @@
 name: scan
 on:
   schedule:
-    - cron: "4-59/10 * * * *"   # GitHub runs these rarely on free repos; cron-job.org triggers workflow_dispatch every 10 min
+    - cron: "4-59/10 * * * *"   # GitHub runs these rarely on free repos; heartbeat.yml starts a scan every 10 min
   workflow_dispatch:
     inputs:
       window:
@@ -10,7 +10,7 @@ on:
   push:
     branches: [main]            # code changes go live right away
 # The site is published straight from this job (Pages source = GitHub Actions), so the
-# encrypted data never piles up in git history; each run continues from the live data.enc.
+# encrypted data never piles up in git history; each run continues from the live data files.
 permissions:
   contents: read
   pages: write
@@ -30,13 +30,16 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -q cryptography anthropic
-      - run: python idf_monitor.py --selftest
+      - run: python idf_monitor.py --selftest && PROFILE=hfc python idf_monitor.py --selftest
+      # Every deploy replaces the whole site: both data files must come back, or their history is lost.
       - name: Continue from the data that is live now
         run: |
-          url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/data.enc?t=$(date +%s)"
-          code=$(curl -sS -o data.enc -w '%{http_code}' "$url")
-          if [ "$code" = 404 ]; then rm -f data.enc; echo "no published data yet: starting fresh"
-          elif [ "$code" != 200 ]; then echo "could not read the live data (HTTP $code); stopping so history is not overwritten"; exit 1; fi
+          for f in data.enc data_hfc.enc; do
+            url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/$f?t=$(date +%s)"
+            code=$(curl -sS -o "$f" -w '%{http_code}' "$url")
+            if [ "$code" = 404 ]; then rm -f "$f"; echo "$f not published yet: starting fresh"
+            elif [ "$code" != 200 ]; then echo "could not read live $f (HTTP $code); stopping so history is not overwritten"; exit 1; fi
+          done
       - run: python idf_monitor.py --once
         env:
           DATA_PASSWORD: ${{ secrets.DATA_PASSWORD }}
@@ -45,10 +48,20 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: tone tagging
           TONE_MODEL: ${{ vars.TONE_MODEL }}                    # optional: defaults to claude-haiku-5-5
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }} # optional: alert bot
+      # Home Front Command system: own data file and password, no Telegram bot. If it fails or HFC_PASSWORD
+      # isn't set yet, the data_hfc.enc downloaded above is published unchanged.
+      - name: Home Front Command scan
+        continue-on-error: true
+        run: PROFILE=hfc python idf_monitor.py --once
+        env:
+          HFC_PASSWORD: ${{ secrets.HFC_PASSWORD }}
+          DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}   # refresh button only
+          NEWS_WINDOW: ${{ inputs.window || '2d' }}
       - name: Build the site folder (encrypted data only)
         run: |
           mkdir site
           cp index.html sw.js manifest.webmanifest stories.js icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png data.enc site/
+          if [ -f data_hfc.enc ]; then cp data_hfc.enc site/; fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

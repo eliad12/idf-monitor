@@ -349,6 +349,43 @@
   .tour-dots i.on { width: 22px; background: var(--brand-2); }
   .offline { position: fixed; top: calc(var(--head-h, 72px) + 8px); left: 50%; transform: translateX(-50%); z-index: 26; background: #3a3a3a; color: #fff; font-size: 13.5px;
     padding: 8px 14px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.25); white-space: nowrap; animation: drop .3s; }
+  /* ---------- system chooser + Home Front Command theme ---------- */
+  .chooser { position: fixed; inset: 0; z-index: 101; display: grid; place-items: center; padding: 20px; overflow: auto;
+    background: radial-gradient(1000px 600px at 80% -10%, #3b6b50 0%, transparent 60%), radial-gradient(900px 600px at 0% 110%, #8a3412 0%, transparent 55%), linear-gradient(160deg, #1d2f24, #0f1913); }
+  .chooser-in { width: min(420px, 100%); text-align: center; color: #fff; animation: rise .4s ease; }
+  .chooser-in img { width: 78px; height: 78px; border-radius: 22px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .chooser-in h1 { margin: 14px 0 2px; font-size: 26px; font-weight: 800; }
+  .chooser-in > p { margin: 0 0 22px; color: #c9d8ce; font-size: 16px; }
+  .sys-card { display: flex; align-items: center; gap: 14px; text-align: start; text-decoration: none; color: var(--ink); background: var(--card);
+    border-radius: 22px; padding: 18px; margin-bottom: 14px; box-shadow: 0 12px 34px rgba(0,0,0,.28); border-inline-start: 6px solid #3b6b50; transition: transform .12s; }
+  .sys-card:active { transform: scale(.98); }
+  .sys-card.hfc { border-inline-start-color: #e8621f; }
+  .sys-card .em { font-size: 30px; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: #e6efe8; flex: none; }
+  .sys-card.hfc .em { background: #fde8dc; }
+  .sys-card .tx { flex: 1; min-width: 0; }
+  .sys-card b { display: block; font-size: 18px; }
+  .sys-card small { display: block; color: var(--muted); font-size: 13.5px; line-height: 1.4; margin-top: 2px; }
+  .sys-card .go { font-size: 20px; color: var(--muted); }
+  .note-lock { color: #a9c0b1; font-size: 13.5px; margin-top: 6px; }
+  .back-sys { display: inline-block; margin-top: 4px; font-size: 14px; color: var(--muted); text-decoration: none; }
+  html.sys-hfc { --brand: #3d1a0f; --brand-2: #c2410c; --brand-soft: #fde8dc; --bar: #c2410c; }
+  html.sys-hfc[data-theme=dark] { --brand: #1f0f0a; --brand-2: #fb7a3c; --brand-soft: #3a1d12; --bar: #fb7a3c; }
+  html.sys-hfc .top { background: linear-gradient(180deg, #4a1d0f, #6b2a12); }
+  html.sys-hfc .hero-main { background: radial-gradient(130% 150% at 100% 0%, #f0742c 0%, #b8400f 50%, #6b2208 100%); box-shadow: 0 12px 30px rgba(120,40,10,.3); }
+  html.sys-hfc .lock { background: radial-gradient(1200px 600px at 80% -10%, #c2410c 0%, transparent 60%), linear-gradient(160deg, #4a1d0f, #1a0b06); }
+  /* alerts card (Home Front Command) */
+  .alerts { padding: 14px 16px; margin-bottom: 16px; border-inline-start: 4px solid #e5484d; }
+  .al-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .al-head h2 { margin: 0; font-size: 17px; }
+  .al-head small { color: var(--muted); font-size: 12px; }
+  .al-stats { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+  .al-stats span { background: var(--card-2); border-radius: 10px; padding: 6px 10px; font-size: 13.5px; }
+  .al-stats b { font-size: 16px; }
+  .al-row { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .al-row time { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+  .al-row .thr { font-weight: 700; }
+  .al-row .cities { grid-column: 1 / -1; color: var(--muted); font-size: 13px; }
+  .al-row .drill { font-size: 11.5px; background: var(--card-2); border-radius: 6px; padding: 0 6px; margin-inline-start: 6px; }
   /* Hebrew translation under foreign headlines */
   .trans { display: flex; gap: 7px; margin-top: 7px; padding: 6px 10px; border-radius: 10px; background: var(--card-2); border-inline-start: 3px solid var(--brand-2);
     font-size: calc(15px * var(--fs, 1)); line-height: 1.5; color: var(--ink); direction: rtl; text-align: right; }
@@ -366,16 +403,29 @@
 </head>
 <body>
 
+<!-- ======= system chooser (no ?s= in the address) ======= -->
+<div class="chooser" id="chooser" hidden>
+  <div class="chooser-in">
+    <img src="icon-192.png" alt="">
+    <h1>היי מיכלי 👋</h1>
+    <p>לאן נכנסים היום?</p>
+    <a class="sys-card" href="?s=idf#news"><span class="em">📰</span><span class="tx"><b>ניטור כתבות צה"ל</b><small>כל אזכור של צה"ל בתקשורת, בטלגרם וברשתות</small></span><span class="go">←</span></a>
+    <a class="sys-card hfc" href="?s=hfc#news"><span class="em">🚨</span><span class="tx"><b>פיקוד העורף</b><small>סיקור, התרעות וערוצי פיקוד העורף</small></span><span class="go">←</span></a>
+    <p class="note-lock">🔒 לכל מערכת סיסמה משלה</p>
+  </div>
+</div>
+
 <!-- ======= password screen ======= -->
 <div id="lock" class="lock" hidden>
   <form id="lockForm" class="lockbox">
     <img src="icon-192.png" alt="">
     <h2>היי מיכלי 👋</h2>
-    <p>הכניסי סיסמה כדי להיכנס לניטור</p>
+    <p id="lockSub">הכניסי סיסמה כדי להיכנס לניטור</p>
     <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" aria-label="סיסמה" required>
     <label class="check"><input type="checkbox" id="remember" checked> זכרי אותי במכשיר הזה</label>
     <button type="submit" id="lockBtn" class="primary">כניסה</button>
     <p id="lockErr" class="err" role="alert"></p>
+    <a class="back-sys" href="./">↩ חזרה לבחירת מערכת</a>
   </form>
 </div>
 
@@ -405,7 +455,7 @@
 <nav class="nav" role="tablist" aria-label="מסכים">
   <div class="nav-in">
     <button role="tab" data-tab="news" aria-selected="true"><span class="ico">📰</span><span>חדשות</span><span class="count" id="cNews">0</span></button>
-    <button role="tab" data-tab="tg" aria-selected="false"><span class="ico">✈️</span><span>טלגרם צה"ל</span><span class="count" id="cTg">0</span></button>
+    <button role="tab" data-tab="tg" aria-selected="false"><span class="ico">✈️</span><span id="tgTabLabel">טלגרם צה"ל</span><span class="count" id="cTg">0</span></button>
     <button role="tab" data-tab="trends" aria-selected="false"><span class="ico">📈</span><span>מגמות</span></button>
     <button role="tab" data-tab="saved" aria-selected="false"><span class="ico">⭐</span><span>שמורים</span><span class="count quiet" id="cSaved">0</span></button>
     <button role="tab" data-tab="social" aria-selected="false"><span class="ico">📱</span><span>רשתות</span></button>
@@ -435,6 +485,12 @@
         <button class="pill-btn" id="topPill" title="להציג רק את הכתבות של האתר הזה"><span class="em">🏆</span><span><b id="sTop" class="small">-</b><small>הכי הרבה כתבות ב-24 שעות</small></span></button>
       </div>
     </div>
+    <section id="alertsCard" class="card alerts" hidden aria-label="התרעות אחרונות">
+      <div class="al-head"><h2>🚨 התרעות אחרונות</h2><small>מקור: אפליקציית צופר (לא רשמי)</small></div>
+      <div class="al-stats" id="alStats"></div>
+      <div id="alList"></div>
+      <button class="textbtn" id="alMore" hidden>הצגת עוד התרעות</button>
+    </section>
     <section id="hotWrap" hidden aria-label="חם עכשיו">
       <h2 class="sec-h">🔥 חם עכשיו <small>סיפורים שכמה אתרים מדווחים עליהם ב-12 השעות האחרונות</small></h2>
       <div class="hot" id="hot"></div>
@@ -509,10 +565,10 @@
 
   <!-- ======= SOCIAL ======= -->
   <section id="tab-social" role="tabpanel" hidden>
-    <p class="note">הפיד של חשבונות צה"ל. X לפעמים לא מציג פיד בלי התחברות. אם זה קורה, לחצי "פתיחה ב-X".</p>
+    <p class="note" id="socialNote">הפיד של חשבונות צה"ל. X לפעמים לא מציג פיד בלי התחברות. אם זה קורה, לחצי "פתיחה ב-X".</p>
     <div class="grid" id="socialGrid"></div>
     <h2 class="sec">קישורים מהירים</h2>
-    <div class="links">
+    <div class="links" id="quickLinks">
       <a class="card" href="https://www.instagram.com/idf/" target="_blank" rel="noopener"><span class="em">📸</span><div>אינסטגרם צה"ל<small>@idf</small></div></a>
       <a class="card" href="https://www.tiktok.com/@idf" target="_blank" rel="noopener"><span class="em">🎵</span><div>טיקטוק צה"ל<small>@idf</small></div></a>
       <a class="card" href="https://t.me/idf_telegram" target="_blank" rel="noopener"><span class="em">✈️</span><div>טלגרם צה"ל (עברית)<small>t.me/idf_telegram</small></div></a>
@@ -549,7 +605,7 @@
 <div class="tour" id="tour" hidden role="dialog" aria-label="ברוכה הבאה">
   <div class="tour-card">
     <div class="tour-view"><div class="tour-slides" id="tourSlides">
-      <div class="slide"><img src="icon-192.png" alt=""><h2>היי מיכלי 👋</h2><p>זה הניטור שלך: כל כתבה שמזכירה את צה"ל, מ-37 אתרים בעברית, אנגלית, ערבית ועוד, במקום אחד.</p></div>
+      <div class="slide"><img src="icon-192.png" alt=""><h2>היי מיכלי 👋</h2><p id="slide1">זה הניטור שלך: כל כתבה שמזכירה את צה"ל, מ-37 אתרים בעברית, אנגלית, ערבית ועוד, במקום אחד.</p></div>
       <div class="slide"><div class="slide-em">🔥</div><h2>מה חם עכשיו</h2><p>סיפורים שכמה אתרים מדווחים עליהם יחד מופיעים למעלה. נקודה זהובה מסמנת כתבה חדשה מאז הפעם הקודמת, ומה שכבר קראת מאפיר.</p></div>
       <div class="slide"><div class="slide-em">📲</div><h2>תמיד איתך</h2><p>הוסיפי את האפליקציה למסך הבית, והפעילי התראות בטלגרם ב-⚙️ הגדרות. משיכה למטה מרעננת, ו-📋 מכין סיכום לדיווח.</p></div>
     </div></div>
@@ -590,6 +646,7 @@
       <div class="seg" id="fontSeg" style="width:160px"><button data-v="1">רגיל</button><button data-v="1.12">גדול</button></div></div>
     <div class="row"><div>👋 הדרכת פתיחה<small>הסבר קצר על האפליקציה</small></div><button class="ghost" id="tourAgain">הצגה</button></div>
     <div class="row"><div>🔄 עדכון אוטומטי<small id="autoHint">האפליקציה בודקת לבד אם יש כתבות חדשות</small></div></div>
+    <div class="row"><div>🔀 מעבר בין מערכות<small id="sysNow"></small></div><a class="ghost" href="./" style="text-decoration:none;color:inherit">החלפה</a></div>
     <div class="row" id="logoutRow" hidden><div>🔒 יציאה מהמכשיר הזה<small>בפעם הבאה תצטרכי להקליד שוב את הסיסמה</small></div><button class="ghost" id="logoutBtn">יציאה</button></div>
     <p class="love">נבנה במיוחד בשביל מיכלי 💚</p>
   </div>
@@ -598,17 +655,26 @@
 <script src="stories.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+// ---- two systems in one app: the IDF news monitor and the Home Front Command system, each with its own
+// data file, password, saved items and "new since last visit" (?s=idf / ?s=hfc; no ?s = the chooser) ----
+const SYSTEMS = {
+  idf: { id: "idf", name: 'ניטור כתבות צה"ל', who: 'צה"ל', file: "data.enc", ns: "", allItems: false, hint: 'חיפוש: רמטכ"ל, עזה, לבנון...' },
+  hfc: { id: "hfc", name: "פיקוד העורף", who: "פיקוד העורף", file: "data_hfc.enc", ns: "hfc_", allItems: false, hint: "חיפוש: אזעקה, הנחיות, מרחב מוגן..." },
+};
+const SYS = SYSTEMS[new URLSearchParams(location.search).get("s")] || null;
+const WHO = SYS ? SYS.who : 'צה"ל';
+const KEY = k => (SYS ? SYS.ns : "") + k;   // per-system localStorage key
 const PAGE = 120;
 let data = { items: [], status: {}, sources: [], telegram: [], refresh: null };
 // "new" = arrived since the previous visit (saved whenever the app goes to the background); a first visit counts the last 6 hours
-let lastSeen = +localStorage.lastSeen || (Date.now() / 1000 - 6 * 3600);
-addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") localStorage.lastSeen = Date.now() / 1000; });
+let lastSeen = +localStorage[KEY("lastSeen")] || (Date.now() / 1000 - 6 * 3600);
+addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") localStorage[KEY("lastSeen")] = Date.now() / 1000; });
 let maxFound = 0;
 const ui = { range: 0, group: "", source: "", tone: "", tgChan: "", shown: PAGE, tgShown: PAGE, trendGroup: "", srcAll: false, day: 6, toneDay: 6, reportRange: 24 };
 // diverging order: critical, neutral, supportive
 const TONE = { critical: { he: "ביקורתי", c: "var(--tone-critical)", em: "🔴" }, neutral: { he: "עובדתי", c: "var(--tone-neutral)", em: "⚪" }, supportive: { he: "אוהד", c: "var(--tone-supportive)", em: "🔵" } };
 const groupOf = {}, domainOf = {};
-let saved = JSON.parse(localStorage.saved || "{}");   // link -> item
+let saved = JSON.parse(localStorage[KEY("saved")] || "{}");   // link -> item
 
 // ---------- helpers ----------
 const now = () => Date.now() / 1000;
@@ -690,7 +756,7 @@ function itemCard(m, i = 0) {
   meta.append(img, src, el("span", null, "·"), t);
   if (now() - m.ts < 3600) meta.append(el("span", "tag now", "עכשיו"));
   else if (m.found > lastSeen) { const d = el("span", "newdot"); d.title = "חדש מאז הביקור הקודם"; meta.append(d); }
-  if (TONE[m.tone]) { const t = el("span", "tone", TONE[m.tone].he); t.style.setProperty("--c", TONE[m.tone].c); t.title = "הטון של הכותרת כלפי צה\"ל (סיווג אוטומטי)"; meta.append(t); }
+  if (TONE[m.tone]) { const t = el("span", "tone", TONE[m.tone].he); t.style.setProperty("--c", TONE[m.tone].c); t.title = `הטון של הכותרת כלפי ${WHO} (סיווג אוטומטי)`; meta.append(t); }
   meta.append(el("span", "grow"));
   const isSaved = !!saved[m.link];
   const star = iconBtn(isSaved ? ICON.starOn : ICON.star, isSaved ? "הסרה מהשמורים" : "שמירה לאחר כך", () => toggleSave(m), isSaved);
@@ -719,7 +785,7 @@ function itemCard(m, i = 0) {
 function toggleSave(m) {
   if (saved[m.link]) { delete saved[m.link]; toast("הוסר מהשמורים"); }
   else { saved[m.link] = m; toast("נשמר ⭐ אפשר למצוא אותו בלשונית שמורים"); navigator.vibrate?.(12); lastToggled = m.link; }
-  localStorage.saved = JSON.stringify(saved);
+  localStorage[KEY("saved")] = JSON.stringify(saved);
   renderAll(); lastToggled = null;
 }
 async function shareItem(m) {
@@ -752,12 +818,13 @@ function renderNews() {
   $("newPill").setAttribute("aria-pressed", !!ui.onlyNew);
   hl = q;
   renderHot();
+  renderAlerts();
   $("storyBar").hidden = !ui.story;
   if (ui.story) $("storyText").textContent = ui.story.title;
 
   // source chips: one swipeable row, busiest first
   const counts = {}; inScope.forEach(m => counts[m.source] = (counts[m.source] || 0) + 1);
-  const names = data.sources.filter(s => !ui.group || s.group === ui.group).map(s => s.name).sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+  const names = [...new Set([...data.sources.map(s => s.name), ...data.items.filter(m => m.kind !== "telegram").map(m => m.source)])].filter(n => !ui.group || groupOf[n] === ui.group).sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
   const all = el("button", "chip", "כל האתרים"); all.setAttribute("aria-pressed", !ui.source);
   all.onclick = () => { ui.source = ""; ui.shown = PAGE; renderNews(); };
   $("chips").replaceChildren(all, ...names.map(n => {
@@ -803,10 +870,54 @@ function renderNews() {
   }));
 }
 
+// ---------- Home Front Command: recent alerts (Tzofar history, unofficial) ----------
+let alShown = 8;
+function renderAlerts() {
+  const list = (data.alerts || []).filter(a => !a.drill);
+  $("alertsCard").hidden = !(SYS.id === "hfc" && data.alerts);
+  if ($("alertsCard").hidden) return;
+  const n24 = list.filter(a => now() - a.ts < 86400).length, n7 = list.filter(a => now() - a.ts < 7 * 86400).length;
+  const last = list[0];
+  $("alStats").replaceChildren(
+    ...[[n24, "ב-24 שעות"], [n7, "ב-7 ימים"]].map(([n, l]) => { const sp = el("span"); sp.append(el("b", null, n), ` התרעות ${l}`); return sp; }),
+    ...(last ? [el("span", null, `אחרונה: ${ago(last.ts)}`)] : []));
+  const fmt = ts => new Date(ts * 1000).toLocaleString("he-IL", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+  $("alList").replaceChildren(...(list.length ? list.slice(0, alShown).map(a => {
+    const r = el("div", "al-row"), cities = a.cities.slice(0, 8).join(", ") + (a.cities.length > 8 ? ` ועוד ${a.cities.length - 8}` : "");
+    r.append(el("span", "thr", a.threat), el("time", null, fmt(a.ts)), el("span", "cities", cities)); return r;
+  }) : empty("✅", "אין התרעות אחרונות", "")));
+  $("alMore").hidden = list.length <= alShown;
+}
+$("alMore").onclick = () => { alShown += 20; renderAlerts(); };
+
+// ---------- per-system wording, colors and links ----------
+function applySystem() {
+  document.documentElement.classList.toggle("sys-hfc", SYS.id === "hfc");
+  $("lockSub").textContent = `הכניסי את הסיסמה של ${SYS.name}`;
+  $("sysNow").textContent = `עכשיו: ${SYS.name}`;
+  $("q").placeholder = SYS.hint;
+  if (SYS.id !== "hfc") return;
+  document.title = "פיקוד העורף · הניטור של מיכלי";
+  $("tgTabLabel").textContent = "טלגרם";
+  $("slide1").textContent = "זו מערכת פיקוד העורף שלך: סיקור של פיקוד העורף מעשרות אתרים בעברית, אנגלית וערבית, הודעות הערוצים הרשמיים והתרעות אחרונות, במקום אחד.";
+  $("socialNote").textContent = 'הפיד והקישורים הרשמיים של פיקוד העורף. X לפעמים לא מציג פיד בלי התחברות. אם זה קורה, לחצי "פתיחה ב-X".';
+  const links = [["🌐", "אתר פיקוד העורף", "oref.org.il", "https://www.oref.org.il"], ["☎️", "מוקד פיקוד העורף", "104", "tel:104"],
+    ["✈️", "טלגרם פיקוד העורף", "t.me/PikudHaOref_all", "https://t.me/PikudHaOref_all"],
+    ["✈️", "Home Front Command (English)", "t.me/HomeFrontCommand", "https://t.me/HomeFrontCommand"],
+    ["𝕏", "פיקוד העורף ב-X", "@PikudHaOref", "https://x.com/PikudHaOref"]];
+  $("quickLinks").replaceChildren(...links.map(([em, name, small, href]) => {
+    const a = el("a", "card"); a.href = href; a.target = "_blank"; a.rel = "noopener";
+    const d = el("div", null, name); d.append(el("small", null, small)); a.append(el("span", "em", em), d); return a;
+  }));
+  // every remaining "צה"ל" in the page's own text becomes "פיקוד העורף"
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n; (n = tw.nextNode());) if (/צה["״]ל/.test(n.nodeValue) && !n.parentElement.closest("#chooser")) n.nodeValue = n.nodeValue.replace(/צה["״]ל/g, WHO);
+}
+
 // ---------- hot stories: the same event covered by 3+ sites in the last 12 hours (stories.js) ----------
 function renderHot() {
   if (typeof clusterStories !== "function") return;
-  const recent = data.items.filter(m => m.hit && m.kind !== "telegram" && now() - m.ts < 12 * 3600);
+  const recent = data.items.filter(m => (m.hit || SYS.allItems) && m.kind !== "telegram" && now() - m.ts < 12 * 3600);
   const stories = clusterStories(recent).slice(0, 8);
   $("hotWrap").hidden = !stories.length;
   $("hot").replaceChildren(...stories.map((s, i) => {
@@ -836,7 +947,7 @@ function renderTg() {
   const mk = (label, v) => { const b = el("button", "chip", label); b.setAttribute("aria-pressed", ui.tgChan === v); b.onclick = () => { ui.tgChan = v; ui.tgShown = PAGE; renderTg(); }; return b; };
   $("tgChan").replaceChildren(mk("כל הערוצים", ""), ...data.telegram.map(t => mk(t.name, t.name)));
   $("tgList").replaceChildren(...(items.length ? withDays(items, ui.tgShown, () => { ui.tgShown += PAGE; renderTg(); })
-    : empty("✈️", "אין עדיין הודעות", "ההודעות מערוצי צה\"ל יופיעו כאן אחרי הבדיקה הבאה.")));
+    : empty("✈️", "אין עדיין הודעות", `ההודעות מהערוצים של ${WHO} יופיעו כאן אחרי הבדיקה הבאה.`)));
 }
 
 // ---------- saved ----------
@@ -853,7 +964,9 @@ let socialLoaded = false;
 function loadSocial() {
   if (socialLoaded) return; socialLoaded = true;
   const dark = document.documentElement.dataset.theme === "dark" ? ' data-theme="dark"' : "";
-  const panels = [
+  const panels = SYS.id === "hfc" ? [
+    { h: "X · פיקוד העורף", url: "https://x.com/PikudHaOref", open: "פתיחה ב-X", html: `<a class="twitter-timeline" data-lang="he"${dark} data-height="540" href="https://twitter.com/PikudHaOref">טוען...</a>` },
+  ] : [
     { h: 'X · צה"ל בעברית', url: "https://x.com/idfonline", open: "פתיחה ב-X", html: `<a class="twitter-timeline" data-lang="he"${dark} data-height="540" href="https://twitter.com/idfonline">טוען...</a>` },
     { h: "X · IDF English", url: "https://x.com/IDF", open: "פתיחה ב-X", html: `<a class="twitter-timeline"${dark} data-height="540" href="https://twitter.com/IDF">Loading...</a>` },
     { h: 'X · דובר צה"ל לערבית', url: "https://x.com/AvichayAdraee", open: "פתיחה ב-X", html: `<a class="twitter-timeline" data-lang="ar"${dark} data-height="540" href="https://twitter.com/AvichayAdraee">טוען...</a>` },
@@ -880,7 +993,7 @@ function loadSocial() {
 }
 
 // ---------- trends ----------
-const hits = () => data.items.filter(m => m.hit && m.kind !== "telegram");
+const hits = () => data.items.filter(m => (m.hit || SYS.allItems) && m.kind !== "telegram");
 const DAY = 86400, WEEK = 7 * DAY, BAR_H = 140;
 function dayStart(daysAgo) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - daysAgo); return d.getTime() / 1000; }
 const countBy = (arr, key) => arr.reduce((a, m) => (a[key(m)] = (a[key(m)] || 0) + 1, a), {});
@@ -962,7 +1075,7 @@ function renderTrends() {
     return;
   }
   const untagged = curAll.length - toned.length;
-  $("toneSub").textContent = "איך הכותרות מציגות את צה\"ל, לפי סיווג אוטומטי של Claude." + (untagged ? ` ${untagged} כתבות עוד מחכות לסיווג.` : "");
+  $("toneSub").textContent = `איך הכותרות מציגות את ${WHO}, לפי סיווג אוטומטי של Claude.` + (untagged ? ` ${untagged} כתבות עוד מחכות לסיווג.` : "");
   const tc = countBy(toned, m => m.tone);
   $("toneLegend").replaceChildren(...Object.entries(TONE).map(([k, t]) => {
     const s = el("span"), i = el("i"); i.style.setProperty("--c", t.c);
@@ -1006,8 +1119,8 @@ function buildReport() {
   const short = t => { t = t.split("\n")[0]; return t.length > 140 ? t.slice(0, 139).trimEnd() + "…" : t; };
   const line = m => `• ${m.source}: ${short(m.title)}` + (trCache[m.link] && !/[א-ת]/.test(m.title) ? `\n   (${short(trCache[m.link])})` : "") + (links ? `\n   ${m.link}` : "");
   const when = new Date().toLocaleString("he-IL", { weekday: "long", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
-  const L = [`📊 סיכום אזכורי צה"ל | ${when}`, `טווח: ${hrs === 24 ? "24 השעות האחרונות" : "7 הימים האחרונים"}`, ""];
-  let head = `📰 ${items.length} כתבות שצה"ל בכותרת שלהן`;
+  const L = [`📊 סיכום אזכורי ${WHO} | ${when}`, `טווח: ${hrs === 24 ? "24 השעות האחרונות" : "7 הימים האחרונים"}`, ""];
+  let head = SYS.allItems ? `📰 ${items.length} כתבות על ${WHO}` : `📰 ${items.length} כתבות ש${WHO} בכותרת שלהן`;
   if (hasHistory(all, since - hrs * 3600)) head += ` (${items.length >= prevN ? "▲" : "▼"} ${Math.abs(items.length - prevN)} לעומת ${hrs === 24 ? "היממה הקודמת" : "השבוע הקודם"})`;
   L.push(head);
   const toned = items.filter(m => TONE[m.tone]);
@@ -1015,7 +1128,7 @@ function buildReport() {
   const il = items.filter(m => groupOf[m.source] === "il"), foreign = items.filter(m => groupOf[m.source] !== "il");
   if (il.length) L.push(`🇮🇱 בתקשורת הישראלית: ${top(il, 5)}`);
   if (foreign.length) L.push(`🌍 בתקשורת הזרה: ${top(foreign, 5)}`);
-  if (tg.length) L.push(`✈️ ${tg.length} הודעות בערוצי הטלגרם של צה"ל`);
+  if (tg.length) L.push(`✈️ ${tg.length} הודעות בערוצי הטלגרם של ${WHO}`);
   const critical = items.filter(m => m.tone === "critical").slice(0, 5);
   if (critical.length) L.push("", "🔴 כותרות ביקורתיות:", ...critical.map(line));
   const seen = new Set(), latest = items.filter(m => !seen.has(m.source) && seen.add(m.source)).slice(0, 8);
@@ -1108,7 +1221,7 @@ $("topPill").onclick = () => {
   ui.source = ui.source === s ? "" : s; ui.shown = PAGE; renderNews();
   $("chips").scrollIntoView({ behavior: "smooth", block: "start" });
 };
-$("markRead").onclick = () => { lastSeen = now(); localStorage.lastSeen = lastSeen; renderAll(); toast("הכל סומן כנקרא ✓"); };
+$("markRead").onclick = () => { lastSeen = now(); localStorage[KEY("lastSeen")] = lastSeen; renderAll(); toast("הכל סומן כנקרא ✓"); };
 
 // ---------- Hebrew translation of English / Arabic / other headlines ----------
 // Google's free web translator, called only when a foreign card scrolls into view; results are kept on the device.
@@ -1174,7 +1287,7 @@ $("notifySwitch").onclick = async () => {
 };
 async function notifyNew(fresh) {
   if (!fresh.length || !("Notification" in window) || Notification.permission !== "granted" || localStorage.notify === "off") return;
-  const title = fresh.length === 1 ? 'כתבה חדשה על צה"ל' : `${fresh.length} כתבות חדשות על צה"ל`;
+  const title = fresh.length === 1 ? `כתבה חדשה על ${WHO}` : `${fresh.length} כתבות חדשות על ${WHO}`;
   const opts = { body: `${fresh[0].source}: ${fresh[0].title.split("\n")[0]}`.slice(0, 180), icon: "icon-192.png", badge: "icon-192.png", tag: "idf-monitor" };
   try { const reg = await navigator.serviceWorker?.getRegistration(); if (reg) return reg.showNotification(title, opts); } catch { }
   try { new Notification(title, opts); } catch { }
@@ -1193,7 +1306,7 @@ const tryDecrypt = async (key, enc) =>
 async function restoreKey(enc) {
   // the derived key (not the password) is kept on this device when "remember me" is on
   try {
-    const s = JSON.parse(localStorage.idfKey || "null");
+    const s = JSON.parse(localStorage[KEY("idfKey")] || "null");
     if (!s || s.salt !== enc.salt) return null;
     return { salt: s.salt, key: await crypto.subtle.importKey("raw", b64(s.raw), "AES-GCM", true, ["decrypt"]) };
   } catch { return null; }
@@ -1209,7 +1322,7 @@ function askPassword(enc) {
         const result = await tryDecrypt(key, enc);
         if ($("remember").checked) {
           const raw = new Uint8Array(await crypto.subtle.exportKey("raw", key));
-          localStorage.idfKey = JSON.stringify({ salt: enc.salt, raw: btoa(String.fromCharCode(...raw)) });
+          localStorage[KEY("idfKey")] = JSON.stringify({ salt: enc.salt, raw: btoa(String.fromCharCode(...raw)) });
         }
         $("lock").hidden = true; $("pw").value = "";
         resolve({ unlock: { salt: enc.salt, key }, result });
@@ -1222,7 +1335,7 @@ async function decryptData(enc) {
   if (!unlocked || unlocked.salt !== enc.salt) unlocked = await restoreKey(enc);
   if (unlocked) {
     try { return await tryDecrypt(unlocked.key, enc); }
-    catch { unlocked = null; localStorage.removeItem("idfKey"); }
+    catch { unlocked = null; localStorage.removeItem(KEY("idfKey")); }
   }
   const { unlock, result } = await askPassword(enc);
   unlocked = unlock;
@@ -1232,8 +1345,9 @@ async function getData(fresh) {
   // hosted copy publishes only data.enc; the local server serves plain data.json.
   // Routine checks revalidate (cheap 304s); `fresh` bypasses the CDN cache while a refresh is tracked.
   const opt = fresh ? { cache: "no-store" } : { cache: "no-cache" };
-  const r = await fetch("data.enc" + (fresh ? "?t=" + Date.now() : ""), opt);
+  const r = await fetch(SYS.file + (fresh ? "?t=" + Date.now() : ""), opt);
   let enc = null;
+  if (r.status === 404 && SYS.id === "hfc") throw new Error("not-set-up");   // its first scan hasn't run yet
   if (r.ok) { try { enc = await r.json(); } catch { } }
   $("logoutRow").hidden = !(enc && enc.ct);
   if (enc && enc.ct) return decryptData(enc);
@@ -1245,10 +1359,17 @@ async function load(fresh = false) {
   if (loading) return;  // the password screen may still be waiting
   loading = true;
   try { data = await getData(fresh); }
-  catch { $("subText").textContent = "אין חיבור כרגע, ננסה שוב בעוד רגע"; return; }
+  catch (e) {
+    if (e.message === "not-set-up") {
+      $("subText").textContent = "המערכת עוד לא הופעלה";
+      $("newsList").replaceChildren(...empty("🛠️", "מערכת פיקוד העורף בהקמה", "הנתונים יופיעו כאן אחרי הסריקה הראשונה שלה."));
+    } else $("subText").textContent = "אין חיבור כרגע, ננסה שוב בעוד רגע";
+    return;
+  }
   finally { loading = false; }
   data.sources.forEach(s => { groupOf[s.name] = s.group; domainOf[s.name] = s.domain; });
   data.telegram.forEach(t => groupOf[t.name] = "tg");
+  data.items.forEach(m => { if (m.group && !groupOf[m.source]) groupOf[m.source] = m.group; if (m.domain && !domainOf[m.source]) domainOf[m.source] = m.domain; });
   const relevant = data.items.filter(m => m.hit);
   const arrived = maxFound ? relevant.filter(m => m.found > maxFound && m.kind !== "telegram") : [];
   if (maxFound) notifyNew(relevant.filter(m => m.found > maxFound));
@@ -1397,7 +1518,7 @@ async function refreshNow() {
 $("refreshBtn").onclick = refreshNow;
 
 // ---------- logout ----------
-$("logoutBtn").onclick = () => { localStorage.removeItem("idfKey"); location.reload(); };
+$("logoutBtn").onclick = () => { localStorage.removeItem(KEY("idfKey")); location.reload(); };
 
 // ---------- install as an app ----------
 const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
@@ -1415,12 +1536,17 @@ $("installClose").onclick = () => { localStorage.installHidden = 1; $("installHi
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => { });
 
 // ---------- start ----------
-tabFromHash();
-renderHeader();
-load();
-setInterval(() => { if (!refreshing && document.visibilityState === "visible") load(); }, 120000);
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !refreshing) load(); });
-setInterval(renderHeader, 60000);
+if (!SYS) {
+  $("chooser").hidden = false;   // no system picked: show the two doors
+} else {
+  applySystem();
+  tabFromHash();
+  renderHeader();
+  load();
+  setInterval(() => { if (!refreshing && document.visibilityState === "visible") load(); }, 120000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !refreshing) load(); });
+  setInterval(renderHeader, 60000);
+}
 </script>
 </body>
 </html>

@@ -4,3 +4,5 @@ __pycache__/
 mentions.json
 data.json
 data.enc
+data_hfc.enc
+mentions_hfc.json

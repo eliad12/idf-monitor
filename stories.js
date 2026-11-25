@@ -1,5 +1,6 @@
 // "Hot stories": groups headlines about the same event from different sites. Loaded by index.html; tested by stories.test.js
 const STOP = new Set(("של את על עם לא זה כי אחרי נגד מול בין גם הוא היא הם הן כל אל או יותר בתוך לאחר אך רק עוד כך מה מי איך למה היום אתמול כעת לפי דרך אשר שלא אין יש היה היו להיות "
+  + "פיקוד העורף פקער התרעה התרעות home front command "
   + "צהל צבא חיילי חיילים לוחמי לוחמים כוחות דובר הצבא ישראל ישראלי ישראלית חדשות צפו תיעוד דיווח בלעדי עדכון "
   + "the a an of to in on for and or with by from at as is are was were be has have had it its this that after over into new says said "
   + "idf israel israeli israels military army forces troops soldiers soldier defense report reports live watch video").split(/\s+/));

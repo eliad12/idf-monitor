@@ -56,8 +56,37 @@ TITLE_HIT = re.compile(
     r'Tsahal|armée israélienne|ej[eé]rcito (israel[ií]|de Israel)|'
     r'الجيش الإسرائيلي|الجيش الاسرائيلي|جيش الاحتلال|قوات الاحتلال|أدرعي|أفيخاي|متحدث\w* (باسم )?الجيش|جندي|جنود', re.I)
 
+# ---- Home Front Command profile: PROFILE=hfc runs the same pipeline on HFC sources, into its own
+# encrypted file (data_hfc.enc) with its own password (HFC_PASSWORD). It never touches the Telegram bot.
+PROFILE = os.environ.get("PROFILE", "idf")
+if PROFILE == "hfc":
+    HFC_HE = ('"פיקוד העורף" OR פקע"ר', "he", "IL", "IL:he")
+    # broad searches across all outlets (domain None): each item's outlet comes from Google's <source> tag,
+    # plus the Israeli outlets one by one, since a single broad search returns only Google's top results
+    SOURCES = [
+        ("עברית", None, HFC_HE, "il"),
+        ("English", None, ('"Home Front Command"', "en", "US", "US:en"), "world"),
+        ("عربي", None, ('"قيادة الجبهة الداخلية"', "ar", "AE", "AE:ar"), "arab"),
+    ] + [(n, d, HFC_HE, g) for n, d, lang, g in SOURCES if lang is HE]
+    DIRECT_FEEDS = []
+    TELEGRAM = [("פיקוד העורף (טלגרם)", "PikudHaOref_all"), ("Home Front Command (English)", "HomeFrontCommand")]
+    # Many sites show an HFC widget on every page, so "mentions HFC" alone is noise: an article counts when
+    # its headline is about the Home Front's world (HFC itself, alerts, shelters, guidelines, fire on the home front).
+    # whole words only, with the prefixes ו/ש/כש + ב/ה/מה ("הטיל", "בטילים", "מהטיל") but not a lone מ/ל
+    # ("מטיל מכסים", "להטיל ספק")
+    HE_WORDS = (r'(?<![א-ת])(?:ו|ש|כש)?(?:מה|ב|ה)?(?:טיל|טילים|טילי|רקטה|רקטות|רקטת|נפילה|נפילות|נפילת|שיגור|שיגורים|שיגורי|'
+                r'יירוט|יירוטים|יורט|יורטו|כטב["״]ם|כטב["״]מים)(?![א-ת])')
+    TITLE_HIT = re.compile(
+        r'פיקוד העורף|פקע["״]ר|מרחב מוגן|ממ["״][דק]|מקלט|אזעק|צבע אדום|התרע|הנחיות|התגוננות|'
+        r'כלי טיס עוין|רעידת אדמה|חומרים מסוכנים|צונאמי|' + HE_WORDS + '|'
+        r'Home Front|\bshelters?\b|\bsirens?\b|\brockets?\b|\bmissiles?\b|intercept|\bdrones?\b|earthquake|'
+        r'قيادة الجبهة الداخلية|الجبهة الداخلية|صفارات|صاروخ|صواريخ|اعتراض|مسيرة|ملاجئ', re.I)
+    DB = HERE / "mentions_hfc.json"
+ALERTS_URL = "https://api.tzevaadom.co.il/alerts-history"  # unofficial (Tzofar app); HFC profile only, skipped on any error
+
 lock = threading.Lock()
 mentions = json.loads(DB.read_text("utf-8")) if DB.exists() else {}
+alerts = []
 status = {"last_poll": None, "last_telegram": None, "errors": [], "polling": False}
 
 
@@ -70,11 +99,13 @@ def feed_url(domain, lang):
     q, hl, gl, ceid = lang
     # routine scans look 2 days back; a one-off NEWS_WINDOW=7d run backfills the week
     window = os.environ.get("NEWS_WINDOW", "2d")
-    params = {"q": f"({q}) site:{domain} when:{window}", "hl": hl, "gl": gl, "ceid": ceid}
+    site = f" site:{domain}" if domain else ""  # no domain = search every outlet
+    params = {"q": f"({q}){site} when:{window}", "hl": hl, "gl": gl, "ceid": ceid}
     return "https://news.google.com/rss/search?" + urllib.parse.urlencode(params)
 
 
-def parse_rss(xml_bytes, source, strip_outlet=True):
+def parse_rss(xml_bytes, source, strip_outlet=True, group=None):
+    """`group` set = a broad search: the outlet name and domain come from each item's <source>."""
     out = []
     for item in ET.fromstring(xml_bytes).iter("item"):
         title = html.unescape(item.findtext("title", "")).strip()
@@ -85,9 +116,27 @@ def parse_rss(xml_bytes, source, strip_outlet=True):
             ts = parsedate_to_datetime(item.findtext("pubDate", "")).timestamp()
         except (TypeError, ValueError):
             ts = time.time()
-        out.append({"title": title, "link": item.findtext("link", "").strip(), "ts": ts, "source": source,
-                    "kind": "news", "found": time.time(), "hit": bool(TITLE_HIT.search(title))})
+        it = {"title": title, "link": item.findtext("link", "").strip(), "ts": ts, "source": source,
+              "kind": "news", "found": time.time(), "hit": bool(TITLE_HIT.search(title))}
+        src = item.find("source")
+        if group and src is not None and (src.text or "").strip():
+            it.update(source=src.text.strip(), domain=urllib.parse.urlparse(src.get("url", "")).netloc, group=group)
+        out.append(it)
     return out
+
+
+THREATS = {0: "ירי רקטות וטילים", 1: "חומרים מסוכנים", 2: "חדירת מחבלים", 3: "רעידת אדמה", 4: "צונאמי",
+           5: "חדירת כלי טיס עוין", 7: "טיל לא קונבנציונלי"}
+
+
+def parse_alerts(raw):
+    """Tzofar alert history -> [{ts, cities, threat, drill}], newest first."""
+    out = []
+    for group in json.loads(raw):
+        for a in group.get("alerts", []):
+            out.append({"ts": a["time"], "cities": a.get("cities", []), "threat": THREATS.get(a.get("threat"), "התרעה"),
+                        "drill": bool(a.get("isDrill"))})
+    return sorted(out, key=lambda a: -a["ts"])
 
 
 def parse_telegram(page, source, channel):
@@ -151,10 +200,10 @@ def poll_news():
             store([it for it in parse_rss(fetch(url), name, strip_outlet=False) if it["hit"]])
         except Exception as e:
             errors.append(f"{name} (RSS): {e}")
-    for name, domain, lang, _ in SOURCES:
+    for name, domain, lang, group in SOURCES:
         for attempt in (1, 2):
             try:
-                store(parse_rss(fetch(feed_url(domain, lang)), name))
+                store(parse_rss(fetch(feed_url(domain, lang)), name, group=None if domain else group))
                 break
             except Exception as e:
                 if attempt == 2:
@@ -162,6 +211,11 @@ def poll_news():
                 else:
                     time.sleep(30)  # Google News rate limit (429): wait and retry once
         time.sleep(3)  # be gentle with Google News
+    if PROFILE == "hfc":
+        try:
+            alerts[:] = parse_alerts(fetch(ALERTS_URL))
+        except Exception:
+            pass  # unofficial and optional: keep the previous alerts
     save()
     status.update(last_poll=time.time(), errors=errors, polling=False)
 
@@ -182,10 +236,13 @@ def snapshot(live, refresh=None):
     with lock:
         return json.dumps({
             "items": sorted(mentions.values(), key=lambda m: -m["ts"]), "status": {**status, "live": live},
-            "sources": [{"name": n, "group": g, "domain": d.split("/")[0]} for n, d, _, g in SOURCES],
+            # broad searches (no domain) aren't outlets: the page builds those chips from the items themselves
+            "sources": [{"name": n, "group": g, "domain": d.split("/")[0]} for n, d, _, g in SOURCES if d],
             "telegram": [{"name": n, "channel": c} for n, c in TELEGRAM],
             "refresh": refresh,
-            "bot": bot or None,
+            "profile": PROFILE,
+            "bot": (bot or None) if PROFILE == "idf" else None,
+            "alerts": alerts if PROFILE == "hfc" else None,
         }, ensure_ascii=False).encode()
 
 
@@ -347,7 +404,7 @@ def send_alerts(token, app_url, now=None):
 
 
 # Hosted copy: data.enc = AES-256-GCM, key = PBKDF2-SHA256(password, salt). The page decrypts it with WebCrypto.
-ENC = HERE / "data.enc"
+ENC = HERE / ("data_hfc.enc" if PROFILE == "hfc" else "data.enc")
 KDF_ITERS = 300_000
 
 
@@ -398,7 +455,22 @@ def selftest():
     [it] = parse_rss(sample, "Reuters")
     assert it["title"] == "Soldiers hurt in Gaza" and it["link"] == "https://x/1" and it["ts"] > 0
     assert "site%3Aynet.co.il" in feed_url("ynet.co.il", HE)
-    assert TITLE_HIT.search('צה"ל תקף') and TITLE_HIT.search("IDF says") and not TITLE_HIT.search("Trump pardons turkeys")
+    assert "site%3A" not in feed_url(None, HE)  # broad search over every outlet
+    broad = b"""<rss><channel><item><title>Shelters open - Ynet</title><link>https://x/2</link>
+    <pubDate>Tue, 24 Nov 2026 10:00:00 GMT</pubDate><source url="https://www.ynet.co.il">ynet</source></item></channel></rss>"""
+    [b] = parse_rss(broad, "עברית", group="il")
+    assert (b["source"], b["domain"], b["group"]) == ("ynet", "www.ynet.co.il", "il"), b
+    al = parse_alerts('[{"id":1,"alerts":[{"time":5,"cities":["A"],"threat":0,"isDrill":false},{"time":9,"cities":["B"],"threat":99,"isDrill":true}]}]')
+    assert [a["ts"] for a in al] == [9, 5] and al[0]["threat"] == "התרעה" and al[0]["drill"] and al[1]["threat"] == "ירי רקטות וטילים"
+    if PROFILE == "hfc":
+        assert TITLE_HIT.search("פיקוד העורף מעדכן את ההנחיות") and TITLE_HIT.search("Home Front Command eases rules") and not TITLE_HIT.search("Trump pardons turkeys")
+        for yes in ("כך יראה המתחם שנפגע מהטיל האיראני", 'יירוט כטב"ם בצפון', "נפילה בשטח פתוח", "שיגורים לעבר הגליל"):
+            assert TITLE_HIT.search(yes), yes
+        for no in ("טראמפ מטיל מכסים חדשים", "מתחילים להטיל ספק", "אופציות לדירקטוריון חברה", "בני ערובה בסופרמרקט",
+                   "אוסטין טילמן התפוצץ", "שלוש שנים לנפילתו"):
+            assert not TITLE_HIT.search(no), no
+    else:
+        assert TITLE_HIT.search('צה"ל תקף') and TITLE_HIT.search("IDF says") and not TITLE_HIT.search("Trump pardons turkeys")
     tg_page = ('<div data-post="idf_telegram/55"><div class="tgme_widget_message_text js-message_text">'
           'שורה&quot;1<br/><b>שורה 2</b></div><time datetime="2026-11-24T10:00:00+00:00"></time></div>'
           '<div data-post="idf_telegram/56"><time datetime="2026-11-24T11:00:00+00:00"></time></div>')
@@ -451,9 +523,10 @@ if __name__ == "__main__":
         sys.exit()
     if "--once" in sys.argv:  # used by the GitHub Actions schedule: one scan, then write the encrypted data file
         import os
-        password = os.environ.get("DATA_PASSWORD", "")
+        pw_var = "HFC_PASSWORD" if PROFILE == "hfc" else "DATA_PASSWORD"  # each system has its own password
+        password = os.environ.get(pw_var, "")
         if not password:
-            sys.exit("DATA_PASSWORD is not set; refusing to publish unencrypted data")
+            sys.exit(f"{pw_var} is not set; refusing to publish unencrypted data")
         salt = os.urandom(16)
         if ENC.exists():
             try:
@@ -462,6 +535,7 @@ if __name__ == "__main__":
                 mentions.clear()
                 mentions.update({m["link"]: m for m in prev["items"]})
                 bot.update(prev.get("bot") or {})
+                alerts[:] = prev.get("alerts") or []
             except Exception:  # password changed: start a fresh history (old data is unreadable anyway)
                 print("could not decrypt previous data, starting fresh")
                 salt = os.urandom(16)
@@ -469,9 +543,10 @@ if __name__ == "__main__":
         tg_errors = status["errors"]
         poll_news()
         status["errors"] = tg_errors + status["errors"]
-        print(f"tones added: {tag_tones()}")
+        if PROFILE == "idf":
+            print(f"tones added: {tag_tones()}")
         token, repo = os.environ.get("DISPATCH_TOKEN", ""), os.environ.get("GITHUB_REPOSITORY", "")
-        bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+        bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "") if PROFILE == "idf" else ""  # the bot belongs to the IDF run only
         if bot_token:
             owner, _, name = repo.partition("/")
             try:  # alerts must never break the scan; log the error type only (Actions logs are public)
