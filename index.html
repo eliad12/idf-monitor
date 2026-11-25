@@ -57,12 +57,13 @@
   .err { color: var(--live); margin: 12px 0 0; min-height: 1.5em; font-weight: 600; }
 
   /* ---------- header ---------- */
-  .top { background: var(--brand); color: #fff; position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top); }
+  .top { background: linear-gradient(180deg, #1f3427, var(--brand)); color: #fff; position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top); box-shadow: 0 4px 18px rgba(15,25,20,.18); }
   .top-in { max-width: 1040px; margin: auto; padding: 14px 18px 12px; display: flex; align-items: center; gap: 12px; }
   .avatar { width: 44px; height: 44px; border-radius: 14px; flex: none; }
   .hello { flex: 1; min-width: 0; }
   .hello h1 { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .hello .sub { font-size: 13px; color: #c9d8ce; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .hello .sub { font-size: 13px; color: #c9d8ce; display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .hello .sub #subText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #6fdc8c; display: inline-block; }
   .busy .live-dot { background: var(--gold); animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: .25; } }
@@ -88,39 +89,66 @@
   .nav .count { background: rgba(255,255,255,.16); border-radius: 99px; padding: 0 7px; font-size: 12px; font-weight: 700; min-width: 20px; text-align: center; }
   .nav .count.hot { background: var(--gold); color: #1a1a1a; }
   @media (max-width: 720px) {
-    :root { --nav-h: calc(64px + env(safe-area-inset-bottom)); }
-    .nav { position: fixed; bottom: 0; left: 0; right: 0; top: auto; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -4px 18px rgba(0,0,0,.06); }
-    .nav-in { padding: 0; gap: 0; }
-    .nav button { flex: 1; flex-direction: column; gap: 1px; padding: 8px 2px 6px; font-size: 11.5px; color: var(--muted); border-bottom: 0; }
-    .nav button[aria-selected=true] { color: var(--brand-2); }
+    /* floating glass tab bar, like a native app */
+    :root { --nav-h: calc(86px + env(safe-area-inset-bottom)); }
+    .nav { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); top: auto; border-radius: 24px;
+      background: color-mix(in srgb, var(--card) 84%, transparent); backdrop-filter: blur(18px) saturate(1.5); -webkit-backdrop-filter: blur(18px) saturate(1.5);
+      border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); box-shadow: 0 10px 34px rgba(0,0,0,.16); }
+    .nav-in { padding: 6px; gap: 2px; }
+    .nav button { flex: 1; flex-direction: column; gap: 0; padding: 5px 2px 4px; font-size: 11px; color: var(--muted); border-bottom: 0; border-radius: 18px; transition: color .15s, background .2s; }
+    .nav button[aria-selected=true] { color: var(--brand-2); background: var(--brand-soft); font-weight: 700; }
+    .nav .ico { font-size: 21px; transition: transform .2s cubic-bezier(.3,1.6,.5,1); }
     .nav button[aria-selected=true] .ico { transform: translateY(-1px) scale(1.12); }
-    .nav .ico { font-size: 22px; transition: transform .15s; }
-    .nav .count { position: absolute; top: 4px; left: calc(50% - 26px); background: var(--live); color: #fff; font-size: 10.5px; padding: 0 5px; }
+    .nav .count { position: absolute; top: 1px; left: calc(50% - 25px); background: var(--live); color: #fff; font-size: 10.5px; padding: 0 5px; box-shadow: 0 0 0 2px var(--card); }
     .nav .count.hot { background: var(--live); color: #fff; }
     .nav .count.quiet { display: none; }
   }
+  [role=tabpanel]:not([hidden]) { animation: fade .25s ease; }
+
+  /* floating helpers */
+  .newpill { position: fixed; top: calc(var(--head-h, 72px) + 10px); left: 50%; transform: translateX(-50%); z-index: 25; border: 0; border-radius: 99px; padding: 9px 18px;
+    background: var(--brand-2); color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 8px 24px rgba(30,60,40,.35); animation: drop .3s cubic-bezier(.3,1.4,.5,1); }
+  @keyframes drop { from { transform: translate(-50%, -24px); opacity: 0; } }
+  .totop { position: fixed; left: 16px; bottom: calc(var(--nav-h) + 16px); z-index: 18; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink); box-shadow: 0 6px 20px rgba(0,0,0,.14); font-size: 20px; display: grid; place-items: center; animation: fade .2s; }
+  .ptr { position: fixed; top: calc(var(--head-h, 72px) + 8px); left: 50%; z-index: 24; width: 40px; height: 40px; margin-left: -20px; border-radius: 50%;
+    background: var(--card); box-shadow: 0 4px 16px rgba(0,0,0,.18); display: grid; place-items: center; color: var(--brand-2); font-size: 20px;
+    transform: translateY(calc(var(--pull, 0px) - 60px)) rotate(var(--pullr, 0deg)); opacity: var(--pullo, 0); pointer-events: none; }
+  .ptr.go { transition: transform .2s; }
+  .ptr.spin { animation: spin .8s linear infinite; transform: translateY(10px); opacity: 1; }
 
   main { max-width: 1040px; margin: 0 auto; padding: 16px 16px calc(40px + var(--nav-h)); }
 
   /* ---------- summary ---------- */
-  .hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; margin-bottom: 14px; }
   .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--line); }
-  .stat-main { padding: 16px 18px 14px; }
-  .stat-main .big { font-size: 38px; font-weight: 800; line-height: 1; }
-  .stat-main .lbl { color: var(--muted); font-size: 14px; margin-top: 4px; }
-  .spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-top: 14px; }
-  .spark i { flex: 1; background: var(--brand-soft); border-radius: 3px 3px 1px 1px; min-height: 3px; position: relative; }
-  .spark i.on { background: var(--brand-2); }
+  .hero { display: grid; grid-template-columns: 1.35fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .hero-main { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 20px 14px; color: #fff;
+    background: radial-gradient(130% 150% at 100% 0%, #4f8d69 0%, #2c4b38 55%, #1b2f23 100%); box-shadow: 0 12px 30px rgba(28,48,36,.28); }
+  .hero-main::before, .hero-main::after { content: ""; position: absolute; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.08); pointer-events: none; }
+  .hero-main::before { width: 260px; height: 260px; left: -90px; top: -110px; }
+  .hero-main::after { width: 160px; height: 160px; left: -40px; top: -60px; }
+  .hero-main .big { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .hero-main .lbl { color: #cfe0d5; font-size: 14px; margin-top: 6px; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 48px; margin-top: 16px; }
+  .spark i { flex: 1; background: rgba(255,255,255,.16); border-radius: 3px 3px 1px 1px; min-height: 3px; transition: height .4s ease; }
+  .spark i.on { background: rgba(255,255,255,.72); }
   .spark i.now { background: var(--gold); }
-  .spark-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
-  .stat-side { display: grid; gap: 12px; }
-  .mini { padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
-  .mini .em { font-size: 24px; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); flex: none; }
-  .mini.gold .em { background: var(--gold-soft); }
-  .mini b { display: block; font-size: 22px; line-height: 1.15; font-weight: 800; }
-  .mini span { color: var(--muted); font-size: 13.5px; }
-  .mini b.small { font-size: 17px; }
-  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; } .stat-side { grid-template-columns: 1fr 1fr; } .mini { padding: 12px; gap: 10px; } .mini .em { width: 38px; height: 38px; font-size: 20px; } .mini b { font-size: 19px; } .mini b.small { font-size: 15px; } }
+  .spark-axis { display: flex; justify-content: space-between; font-size: 11px; color: #a9c0b1; margin-top: 5px; }
+  .hero-pills { display: grid; gap: 12px; }
+  .pill-btn { display: flex; align-items: center; gap: 12px; text-align: start; padding: 14px 16px; border-radius: 20px; border: 1.5px solid var(--line); background: var(--card); box-shadow: var(--shadow); transition: transform .12s, border-color .15s, background .15s; min-width: 0; }
+  .pill-btn:active { transform: scale(.97); }
+  .pill-btn .em { font-size: 22px; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--brand-soft); flex: none; }
+  .pill-btn.gold .em { background: var(--gold-soft); }
+  .pill-btn > span:last-child { min-width: 0; }
+  .pill-btn b { display: block; font-size: 22px; line-height: 1.15; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pill-btn b.small { font-size: 17px; }
+  .pill-btn small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+  .pill-btn[aria-pressed=true] { border-color: var(--gold); background: var(--gold-soft); }
+  @media (max-width: 720px) {
+    .hero { grid-template-columns: 1fr; } .hero-pills { grid-template-columns: 1fr 1fr; }
+    .pill-btn { padding: 12px; gap: 10px; flex-direction: column; align-items: flex-start; }
+    .pill-btn .em { width: 36px; height: 36px; font-size: 18px; border-radius: 11px; } .pill-btn b { font-size: 20px; } .pill-btn b.small { font-size: 16px; }
+  }
 
   /* ---------- search + filters ---------- */
   .searchrow { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -166,11 +194,28 @@
   .love { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
 
   /* ---------- article cards ---------- */
-  .day { font-size: 13px; font-weight: 700; color: var(--muted); margin: 20px 4px 8px; letter-spacing: .2px; }
-  .item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 13px 15px 10px; margin-bottom: 10px; position: relative; overflow: hidden; }
-  .item.new::before { content: ""; position: absolute; inset-block: 0; right: 0; width: 4px; background: var(--gold); }
-  .meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
-  .fav { width: 20px; height: 20px; border-radius: 6px; background: var(--card-2); flex: none; object-fit: contain; }
+  .day { position: sticky; top: var(--head-h, 72px); z-index: 5; display: table; font-size: 12.5px; font-weight: 700; color: var(--muted); margin: 16px 2px 8px; padding: 3px 12px; border-radius: 99px;
+    background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(8px); }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 12px 14px 13px; margin-bottom: 10px; position: relative; cursor: pointer;
+    transition: transform .12s ease, box-shadow .18s ease, border-color .18s; }
+  /* entrance animation only on the first paint (class set briefly by JS), not on every background refresh */
+  .anim .item { animation: rise .35s ease both; animation-delay: calc(var(--i, 0) * 30ms); }
+  .item:hover { box-shadow: 0 8px 24px rgba(20,30,25,.10); border-color: color-mix(in srgb, var(--brand-2) 25%, var(--line)); }
+  .item:active { transform: scale(.992); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .meta { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); margin-bottom: 6px; min-height: 30px; }
+  .meta .grow { flex: 1; }
+  .meta > span { white-space: nowrap; flex: none; }
+  .meta > .src { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .fav { width: 26px; height: 26px; border-radius: 8px; background: var(--card-2); flex: none; object-fit: contain; padding: 2px; border: 1px solid var(--line); }
+  .newdot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: none; box-shadow: 0 0 0 3px var(--gold-soft); }
+  .ibtn { width: 34px; height: 34px; border-radius: 11px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; flex: none; transition: background .15s, color .15s, transform .15s; }
+  .ibtn:hover { background: var(--card-2); color: var(--ink); }
+  .ibtn:active { transform: scale(.88); }
+  .ibtn.on { color: var(--gold); }
+  .ibtn svg { width: 19px; height: 19px; }
+  .item.read .title { color: var(--muted); font-weight: 500; }
+  .item.read .fav { filter: grayscale(.6); opacity: .75; }
   .src { font-weight: 700; color: var(--ink); }
   .src.il { color: var(--il); } .src.world { color: var(--world); } .src.arab { color: var(--arab); } .src.tg { color: var(--tg); }
   .tone { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); }
@@ -217,16 +262,13 @@
   .tag.now { background: #fde7e8; color: #c62f35; display: inline-flex; align-items: center; gap: 5px; }
   [data-theme=dark] .tag.now { background: #3a1d1f; color: #ff8b8f; }
   .tag.now::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.2s infinite; }
-  .item .title { display: block; text-decoration: none; font-size: 17px; font-weight: 600; line-height: 1.45; unicode-bidi: plaintext; color: var(--ink); }
+  .item .title { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none; font-size: 17px; font-weight: 600; line-height: 1.5; unicode-bidi: plaintext; color: var(--ink); }
   .item .title:hover { color: var(--brand-2); }
-  .tgtext { white-space: pre-wrap; unicode-bidi: plaintext; font-size: 16px; }
+  /* Telegram posts look like channel messages */
+  .item.tgpost { background: color-mix(in srgb, var(--tg) 7%, var(--card)); border-color: color-mix(in srgb, var(--tg) 18%, var(--line)); border-radius: 18px 18px 18px 6px; }
+  .tgtext { white-space: pre-wrap; unicode-bidi: plaintext; font-size: 16px; line-height: 1.6; }
   .tgtext.clamp { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
-  .more-txt { background: none; border: 0; color: var(--brand-2); font-weight: 600; padding: 4px 0 0; font-size: 14px; }
-  .acts { display: flex; gap: 2px; margin-top: 6px; margin-inline-start: -8px; }
-  .acts button, .acts a { background: none; border: 0; color: var(--muted); font-size: 13.5px; font-weight: 600; padding: 6px 8px; border-radius: 9px; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
-  .acts button:hover, .acts a:hover { background: var(--card-2); color: var(--ink); }
-  .acts .saved { color: var(--gold); }
-  .acts svg { width: 17px; height: 17px; }
+  .more-txt { background: none; border: 0; color: var(--tg); font-weight: 700; padding: 6px 0 0; font-size: 14px; }
   .loadmore { display: block; margin: 16px auto; padding: 11px 26px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); font-weight: 600; box-shadow: var(--shadow); }
   .empty { text-align: center; color: var(--muted); padding: 46px 16px; }
   .empty .em { font-size: 44px; display: block; margin-bottom: 8px; }
@@ -255,6 +297,63 @@
   .links small { display: block; color: var(--muted); direction: ltr; text-align: right; }
   h2.sec { font-size: 17px; margin: 26px 2px 4px; }
 
+  /* ---------- round 3: hot stories, intro, compact header, loaders ---------- */
+  .sec-h { font-size: 17px; font-weight: 800; margin: 4px 2px 10px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .sec-h small { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+  .hot { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px 16px; padding: 2px 16px 8px; scrollbar-width: none; }
+  .hot::-webkit-scrollbar { display: none; }
+  .hotcard { flex: 0 0 min(300px, 80%); scroll-snap-align: start; text-align: start; border: 1.5px solid var(--line); border-radius: 20px; background: var(--card); box-shadow: var(--shadow);
+    padding: 13px 15px; display: flex; flex-direction: column; gap: 9px; position: relative; overflow: hidden; transition: transform .12s, border-color .15s; }
+  .anim .hotcard { animation: rise .4s ease both; animation-delay: calc(var(--i, 0) * 60ms); }
+  .hotcard::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, #f0a020, #e5484d); }
+  .hotcard:active { transform: scale(.98); }
+  .hotcard[aria-pressed=true] { border-color: #e5484d; }
+  .hotcard .who { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: #c2410c; }
+  [data-theme=dark] .hotcard .who { color: #fb923c; }
+  .faces { display: flex; }
+  .faces img { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--card); background: var(--card-2); margin-inline-start: -7px; object-fit: contain; }
+  .faces img:first-child { margin-inline-start: 0; }
+  .hotcard .ht { font-size: 15.5px; font-weight: 700; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; unicode-bidi: plaintext; }
+  .hotcard .hm { font-size: 12.5px; color: var(--muted); margin-top: auto; }
+  .storybar { display: flex; align-items: center; gap: 8px; background: color-mix(in srgb, #e5484d 9%, var(--card)); border: 1px solid color-mix(in srgb, #e5484d 30%, var(--line));
+    border-radius: 14px; padding: 6px 8px 6px 12px; margin-bottom: 8px; font-size: 14px; font-weight: 600; animation: fade .2s; }
+  .storybar #storyText { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hero-row { display: flex; align-items: center; gap: 12px; }
+  .hdelta { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: rgba(255,255,255,.14); color: #fff; white-space: nowrap; }
+  mark { background: color-mix(in srgb, var(--gold) 38%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
+  .ibtn.pop svg { animation: pop .45s cubic-bezier(.3,1.8,.5,1); }
+  @keyframes pop { 40% { transform: scale(1.5) rotate(-12deg); } }
+  /* radar loader */
+  .radar-load { display: grid; justify-items: center; gap: 12px; padding: 50px 0; color: var(--muted); font-weight: 600; }
+  .radar { width: 64px; height: 64px; border-radius: 50%; position: relative; border: 2px solid color-mix(in srgb, var(--brand-2) 40%, transparent);
+    background: repeating-radial-gradient(circle, transparent 0 13px, color-mix(in srgb, var(--brand-2) 25%, transparent) 13px 14px); overflow: hidden; }
+  .radar::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, color-mix(in srgb, var(--brand-2) 55%, transparent), transparent 70deg); animation: spin 1.6s linear infinite reverse; }
+  /* large-title header that compacts on scroll */
+  .top .avatar, .hello h1, .hello .sub { transition: all .22s ease; }
+  .top.compact .top-in { padding-block: 8px; }
+  .top.compact .avatar { width: 32px; height: 32px; border-radius: 10px; }
+  .top.compact .hello h1 { font-size: 16.5px; }
+  .top.compact .hello .sub { font-size: 12px; }
+  /* first-run intro */
+  .tour { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(10,20,14,.55); backdrop-filter: blur(6px); animation: fade .25s; }
+  .tour-card { background: var(--card); border-radius: 26px; width: min(390px, 100%); padding: 26px 22px 20px; box-shadow: 0 24px 70px rgba(0,0,0,.35); overflow: hidden; animation: rise .35s ease; }
+  .tour-view { overflow: hidden; }
+  .tour-slides { display: flex; transition: transform .35s cubic-bezier(.3,1,.4,1); }
+  .slide { flex: 0 0 100%; text-align: center; padding: 0 6px; }
+  .slide img { width: 72px; height: 72px; border-radius: 20px; }
+  .slide-em { font-size: 54px; line-height: 72px; }
+  .slide h2 { margin: 12px 0 8px; font-size: 22px; }
+  .slide p { margin: 0; color: var(--muted); line-height: 1.65; }
+  .tour-dots { display: flex; justify-content: center; gap: 6px; margin: 18px 0 4px; }
+  .tour-dots i { width: 7px; height: 7px; border-radius: 99px; background: var(--line); transition: all .25s; }
+  .tour-dots i.on { width: 22px; background: var(--brand-2); }
+  .offline { position: fixed; top: calc(var(--head-h, 72px) + 8px); left: 50%; transform: translateX(-50%); z-index: 26; background: #3a3a3a; color: #fff; font-size: 13.5px;
+    padding: 8px 14px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.25); white-space: nowrap; animation: drop .3s; }
+  /* text size setting */
+  .item .title { font-size: calc(17px * var(--fs, 1)); }
+  .tgtext { font-size: calc(16px * var(--fs, 1)); }
+  .num, .big, .bignum, .pill-btn b, .hrow .num { font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
   .toast { position: fixed; bottom: calc(20px + var(--nav-h)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 12px; font-size: 14.5px; font-weight: 600; z-index: 60; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100% - 32px); text-align: center; }
 </style>
 </head>
@@ -318,17 +417,21 @@
   <!-- ======= NEWS ======= -->
   <section id="tab-news" role="tabpanel">
     <div class="hero">
-      <div class="card stat-main">
-        <div class="big" id="sDay">0</div>
+      <div class="hero-main">
+        <div class="hero-row"><div class="big" id="sDay">0</div><span class="hdelta" id="sDelta" hidden></span></div>
         <div class="lbl">כתבות שהזכירו את צה"ל ב-24 השעות האחרונות</div>
         <div class="spark" id="spark" aria-hidden="true"></div>
         <div class="spark-axis"><span>לפני 24 שעות</span><span>עכשיו</span></div>
       </div>
-      <div class="stat-side">
-        <div class="card mini gold"><span class="em">✨</span><div><b id="sNew">0</b><span>חדשות בשבילך</span></div></div>
-        <div class="card mini"><span class="em">🏆</span><div><b id="sTop" class="small">-</b><span>הכי הרבה כתבות ב-24 שעות</span></div></div>
+      <div class="hero-pills">
+        <button class="pill-btn gold" id="newPill" aria-pressed="false" title="להציג רק כתבות שהגיעו מאז הביקור הקודם"><span class="em">✨</span><span><b id="sNew">0</b><small>חדשות מאז הביקור הקודם</small></span></button>
+        <button class="pill-btn" id="topPill" title="להציג רק את הכתבות של האתר הזה"><span class="em">🏆</span><span><b id="sTop" class="small">-</b><small>הכי הרבה כתבות ב-24 שעות</small></span></button>
       </div>
     </div>
+    <section id="hotWrap" hidden aria-label="חם עכשיו">
+      <h2 class="sec-h">🔥 חם עכשיו <small>סיפורים שכמה אתרים מדווחים עליהם ב-12 השעות האחרונות</small></h2>
+      <div class="hot" id="hot"></div>
+    </section>
     <div class="warn" id="errors" hidden></div>
     <div class="searchrow">
       <label class="search"><span class="sr">חיפוש</span>
@@ -338,8 +441,9 @@
       <button class="filterbtn" id="filterBtn">סינון <span class="dot" id="filterDot" hidden>0</span></button>
     </div>
     <div class="chips" id="chips" aria-label="סינון לפי אתר"></div>
+    <div class="storybar" id="storyBar" hidden><span>🔥</span><span id="storyText"></span><button class="ibtn" id="storyClear" aria-label="ביטול סינון הסיפור">✕</button></div>
     <div class="listhead"><span id="listCount"></span><span><button class="textbtn" id="reportBtn">📋 סיכום לדיווח</button> <button class="textbtn" id="markRead">✓ סמני הכל כנקרא</button></span></div>
-    <div id="newsList"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    <div id="newsList"><div class="radar-load"><div class="radar"></div><span>סורקת את החדשות...</span></div></div>
   </section>
 
   <!-- ======= TELEGRAM ======= -->
@@ -435,6 +539,22 @@
   </div>
 </div>
 
+<div class="tour" id="tour" hidden role="dialog" aria-label="ברוכה הבאה">
+  <div class="tour-card">
+    <div class="tour-view"><div class="tour-slides" id="tourSlides">
+      <div class="slide"><img src="icon-192.png" alt=""><h2>היי מיכלי 👋</h2><p>זה הניטור שלך: כל כתבה שמזכירה את צה"ל, מ-37 אתרים בעברית, אנגלית, ערבית ועוד, במקום אחד.</p></div>
+      <div class="slide"><div class="slide-em">🔥</div><h2>מה חם עכשיו</h2><p>סיפורים שכמה אתרים מדווחים עליהם יחד מופיעים למעלה. נקודה זהובה מסמנת כתבה חדשה מאז הפעם הקודמת, ומה שכבר קראת מאפיר.</p></div>
+      <div class="slide"><div class="slide-em">📲</div><h2>תמיד איתך</h2><p>הוסיפי את האפליקציה למסך הבית, והפעילי התראות בטלגרם ב-⚙️ הגדרות. משיכה למטה מרעננת, ו-📋 מכין סיכום לדיווח.</p></div>
+    </div></div>
+    <div class="tour-dots" id="tourDots"><i></i><i></i><i></i></div>
+    <div class="btnrow"><button class="ghost" id="tourSkip">דילוג</button><button class="primary" id="tourNext">הבא</button></div>
+  </div>
+</div>
+<div class="offline" id="offline" hidden>📡 אין חיבור לאינטרנט. מוצג המידע האחרון שנטען.</div>
+<button class="newpill" id="newPillTop" hidden>↑ כתבות חדשות</button>
+<button class="totop" id="toTop" hidden aria-label="חזרה למעלה">↑</button>
+<div class="ptr" id="ptr" aria-hidden="true">↻</div>
+
 <!-- ======= report sheet ======= -->
 <div id="reportSheet" hidden>
   <div class="scrim" data-close></div>
@@ -458,17 +578,23 @@
     <div class="row"><div>🔔 התראות על כתבות חדשות<small id="notifyHint">התראה כשהאפליקציה פתוחה ונמצאת כתבה חדשה</small></div><button class="switch" id="notifySwitch" role="switch" aria-checked="false" aria-label="התראות"></button></div>
     <div class="row"><div>🌙 מצב תצוגה</div>
       <div class="seg" id="themeSeg" style="width:210px"><button data-v="auto">אוטומטי</button><button data-v="light">בהיר</button><button data-v="dark">כהה</button></div></div>
+    <div class="row"><div>🔠 גודל טקסט</div>
+      <div class="seg" id="fontSeg" style="width:160px"><button data-v="1">רגיל</button><button data-v="1.12">גדול</button></div></div>
+    <div class="row"><div>👋 הדרכת פתיחה<small>הסבר קצר על האפליקציה</small></div><button class="ghost" id="tourAgain">הצגה</button></div>
     <div class="row"><div>🔄 עדכון אוטומטי<small id="autoHint">האפליקציה בודקת לבד אם יש כתבות חדשות</small></div></div>
     <div class="row" id="logoutRow" hidden><div>🔒 יציאה מהמכשיר הזה<small>בפעם הבאה תצטרכי להקליד שוב את הסיסמה</small></div><button class="ghost" id="logoutBtn">יציאה</button></div>
     <p class="love">נבנה במיוחד בשביל מיכלי 💚</p>
   </div>
 </div>
 
+<script src="stories.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const PAGE = 120;
 let data = { items: [], status: {}, sources: [], telegram: [], refresh: null };
-let lastSeen = +localStorage.lastSeen || 0;
+// "new" = arrived since the previous visit (saved whenever the app goes to the background); a first visit counts the last 6 hours
+let lastSeen = +localStorage.lastSeen || (Date.now() / 1000 - 6 * 3600);
+addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") localStorage.lastSeen = Date.now() / 1000; });
 let maxFound = 0;
 const ui = { range: 0, group: "", source: "", tone: "", tgChan: "", shown: PAGE, tgShown: PAGE, trendGroup: "", srcAll: false, day: 6, toneDay: 6, reportRange: 24 };
 // diverging order: critical, neutral, supportive
@@ -522,9 +648,31 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme
 applyTheme();
 
 // ---------- card building ----------
-function itemCard(m) {
+// articles she opened turn gray, so the list shows what's left to read
+const readSet = new Set(JSON.parse(localStorage.read || "[]"));
+function markRead(link, card) {
+  if (readSet.has(link)) return;
+  readSet.add(link); card && card.classList.add("read");
+  localStorage.read = JSON.stringify([...readSet].slice(-3000));
+}
+// search matches are highlighted in the text (built from text nodes, never innerHTML)
+let hl = "";
+function fillHighlighted(node, text) {
+  if (!hl) { node.textContent = text; return; }
+  const re = new RegExp(hl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+  let last = 0;
+  for (const mt of text.matchAll(re)) { node.append(text.slice(last, mt.index), el("mark", null, mt[0])); last = mt.index + mt[0].length; }
+  node.append(text.slice(last));
+}
+let lastToggled = null;   // the star that was just tapped gets a small "pop"
+function iconBtn(svg, label, onclick, on) {
+  const b = el("button", "ibtn" + (on ? " on" : "")); b.innerHTML = svg; b.title = label; b.setAttribute("aria-label", label);
+  b.onclick = e => { e.stopPropagation(); onclick(b); }; return b;
+}
+function itemCard(m, i = 0) {
   const tg = m.kind === "telegram";
-  const c = el("article", "item" + (m.found > lastSeen ? " new" : ""));
+  const c = el("article", "item" + (tg ? " tgpost" : "") + (readSet.has(m.link) && !tg ? " read" : ""));
+  c.style.setProperty("--i", Math.min(i, 12));
   const meta = el("div", "meta");
   const img = el("img", "fav"); img.alt = ""; img.loading = "lazy";
   img.src = tg ? favicon("telegram.org") : favicon(domainOf[m.source] || "news.google.com");
@@ -533,41 +681,37 @@ function itemCard(m) {
   const t = el("span", null, ago(m.ts)); t.title = full(m.ts);
   meta.append(img, src, el("span", null, "·"), t);
   if (now() - m.ts < 3600) meta.append(el("span", "tag now", "עכשיו"));
-  else if (m.found > lastSeen) meta.append(el("span", "tag new", "חדש"));
+  else if (m.found > lastSeen) { const d = el("span", "newdot"); d.title = "חדש מאז הביקור הקודם"; meta.append(d); }
   if (TONE[m.tone]) { const t = el("span", "tone", TONE[m.tone].he); t.style.setProperty("--c", TONE[m.tone].c); t.title = "הטון של הכותרת כלפי צה\"ל (סיווג אוטומטי)"; meta.append(t); }
+  meta.append(el("span", "grow"));
+  const isSaved = !!saved[m.link];
+  const star = iconBtn(isSaved ? ICON.starOn : ICON.star, isSaved ? "הסרה מהשמורים" : "שמירה לאחר כך", () => toggleSave(m), isSaved);
+  if (m.link === lastToggled) star.classList.add("pop");
+  meta.append(star, iconBtn(ICON.share, navigator.share ? "שיתוף" : "העתקה לדיווח", () => shareItem(m)));
   c.append(meta);
 
   if (tg) {
-    const body = el("div", "tgtext clamp", m.title);
+    const body = el("div", "tgtext clamp"); fillHighlighted(body, m.title);
     c.append(body);
     if (m.title.length > 280 || m.title.split("\n").length > 6) {
       const more = el("button", "more-txt", "קראי עוד");
-      more.onclick = () => { const open = body.classList.toggle("clamp"); more.textContent = open ? "קראי עוד" : "הצג פחות"; };
+      more.onclick = e => { e.stopPropagation(); const open = body.classList.toggle("clamp"); more.textContent = open ? "קראי עוד" : "הצג פחות"; };
       c.append(more);
     }
   } else {
-    const a = el("a", "title", m.title); a.href = m.link; a.target = "_blank"; a.rel = "noopener";
+    const a = el("a", "title"); fillHighlighted(a, m.title); a.href = m.link; a.target = "_blank"; a.rel = "noopener"; a.title = m.title;
+    a.onclick = e => { e.stopPropagation(); markRead(m.link, c); };
     c.append(a);
   }
-
-  const acts = el("div", "acts");
-  const isSaved = !!saved[m.link];
-  const star = el("button", isSaved ? "saved" : "");
-  star.innerHTML = (isSaved ? ICON.starOn : ICON.star) + `<span>${isSaved ? "נשמר" : "שמירה"}</span>`;
-  star.setAttribute("aria-pressed", isSaved);
-  star.onclick = () => toggleSave(m);
-  const share = el("button"); share.innerHTML = ICON.share + `<span>${navigator.share ? "שיתוף" : "העתקה"}</span>`;
-  share.onclick = () => shareItem(m);
-  const open = el("a"); open.innerHTML = ICON.open + "<span>פתיחה</span>"; open.href = m.link; open.target = "_blank"; open.rel = "noopener";
-  acts.append(star, share, open);
-  c.append(acts);
+  // the whole card is the tap target; buttons and links inside stop the event
+  c.onclick = () => { if (getSelection().toString()) return; markRead(m.link, c); open(m.link, "_blank", "noopener"); };
   return c;
 }
 function toggleSave(m) {
   if (saved[m.link]) { delete saved[m.link]; toast("הוסר מהשמורים"); }
-  else { saved[m.link] = m; toast("נשמר ⭐ אפשר למצוא אותו בלשונית שמורים"); }
+  else { saved[m.link] = m; toast("נשמר ⭐ אפשר למצוא אותו בלשונית שמורים"); navigator.vibrate?.(12); lastToggled = m.link; }
   localStorage.saved = JSON.stringify(saved);
-  renderAll();
+  renderAll(); lastToggled = null;
 }
 async function shareItem(m) {
   const text = `${m.source}: ${m.title.split("\n")[0].slice(0, 200)}`;
@@ -576,10 +720,10 @@ async function shareItem(m) {
 }
 function withDays(items, limit, onMore) {
   const out = []; let day = "";
-  items.slice(0, limit).forEach(m => {
+  items.slice(0, limit).forEach((m, i) => {
     const d = dayLabel(m.ts);
     if (d !== day) { out.push(el("div", "day", d)); day = d; }
-    out.push(itemCard(m));
+    out.push(itemCard(m, i));
   });
   if (items.length > limit) { const b = el("button", "loadmore", `עוד ${items.length - limit} כתבות`); b.onclick = onMore; out.push(b); }
   return out;
@@ -595,7 +739,12 @@ function renderNews() {
   const since = ui.range ? now() - ui.range * 3600 : 0;
   const inScope = base.filter(m => m.ts >= since && (!ui.group || groupOf[m.source] === ui.group) && (!ui.tone || m.tone === ui.tone) && (!q || m.title.toLowerCase().includes(q)));
   $("toneFilterWrap").hidden = !data.items.some(m => m.tone);
-  const items = inScope.filter(m => !ui.source || m.source === ui.source);
+  const items = inScope.filter(m => (!ui.source || m.source === ui.source) && (!ui.onlyNew || m.found > lastSeen) && (!ui.story || ui.story.links.has(m.link)));
+  $("newPill").setAttribute("aria-pressed", !!ui.onlyNew);
+  hl = q;
+  renderHot();
+  $("storyBar").hidden = !ui.story;
+  if (ui.story) $("storyText").textContent = ui.story.title;
 
   // source chips: one swipeable row, busiest first
   const counts = {}; inScope.forEach(m => counts[m.source] = (counts[m.source] || 0) + 1);
@@ -614,22 +763,28 @@ function renderNews() {
   const nFilters = (ui.range ? 1 : 0) + (ui.group ? 1 : 0) + (ui.tone ? 1 : 0) + ($("weak").checked ? 1 : 0);
   $("filterDot").hidden = !nFilters; $("filterDot").textContent = nFilters;
   const rangeName = { 1: "בשעה האחרונה", 24: "ב-24 השעות האחרונות", 72: "ב-3 הימים האחרונים", 168: "בשבוע האחרון" }[ui.range] || "";
-  $("listCount").textContent = items.length ? `${items.length} כתבות` + (ui.source ? ` מ${ui.source}` : "") + (rangeName ? ` ${rangeName}` : "") : "";
+  $("listCount").textContent = items.length ? `${items.length} ${ui.onlyNew ? "כתבות חדשות" : "כתבות"}` + (ui.source ? ` מ${ui.source}` : "") + (rangeName ? ` ${rangeName}` : "") : "";
 
   const first = !data.status.last_poll;
-  $("newsList").replaceChildren(...(items.length ? withDays(items, ui.shown, () => { ui.shown += PAGE; renderNews(); })
+  if (!holdList) $("newsList").replaceChildren(...(items.length ? withDays(items, ui.shown, () => { ui.shown += PAGE; renderNews(); })
     : first ? empty("⏳", "אוספת כתבות בפעם הראשונה", "זה לוקח כמה דקות. הכתבות יופיעו כאן לבד.")
+    : ui.onlyNew ? empty("✅", "קראת הכל", "אין כתבות חדשות מאז הביקור הקודם. לחצי שוב על ✨ כדי לראות את כל הכתבות.")
     : empty("🔎", "לא נמצאו כתבות", "נסי טווח זמן רחב יותר, אתר אחר או חיפוש אחר.")));
 
   // summary
   const day = base.filter(m => m.ts >= now() - 86400);
   $("sDay").textContent = day.length;
+  const prevDay = base.filter(m => m.ts >= now() - 2 * 86400 && m.ts < now() - 86400).length;
+  $("sDelta").hidden = !hasHistory(base, now() - 2 * 86400);
+  $("sDelta").textContent = day.length === prevDay ? "כמו אתמול" : `${day.length > prevDay ? "▲" : "▼"} ${Math.abs(day.length - prevDay)} מאתמול`;
   $("sNew").textContent = base.filter(m => m.found > lastSeen).length;
   // last 24h, not "since midnight", so the card isn't empty right after midnight
   const per = {}; day.forEach(m => per[m.source] = (per[m.source] || 0) + 1);
   const top = Object.entries(per).sort((a, b) => b[1] - a[1])[0];
   $("sTop").textContent = top ? top[0] : "אין עדיין";
   $("sTop").title = top ? `${top[1]} כתבות` : "";
+  $("topPill").dataset.src = top ? top[0] : "";
+  $("topPill").setAttribute("aria-pressed", !!top && ui.source === top[0]);
   const hours = Array(24).fill(0);
   day.forEach(m => { const i = 23 - Math.floor((now() - m.ts) / 3600); if (i >= 0 && i < 24) hours[i]++; });
   const max = Math.max(...hours, 1);
@@ -639,9 +794,35 @@ function renderNews() {
   }));
 }
 
+// ---------- hot stories: the same event covered by 3+ sites in the last 12 hours (stories.js) ----------
+function renderHot() {
+  if (typeof clusterStories !== "function") return;
+  const recent = data.items.filter(m => m.hit && m.kind !== "telegram" && now() - m.ts < 12 * 3600);
+  const stories = clusterStories(recent).slice(0, 8);
+  $("hotWrap").hidden = !stories.length;
+  $("hot").replaceChildren(...stories.map((s, i) => {
+    const lead = s.items.find(m => groupOf[m.source] === "il") || s.items[0];
+    const b = el("button", "hotcard"); b.style.setProperty("--i", i);
+    b.setAttribute("aria-pressed", !!ui.story && ui.story.key === lead.link);
+    const who = el("div", "who"), faces = el("span", "faces");
+    [...s.sources].slice(0, 5).forEach(src => { const im = el("img"); im.alt = ""; im.src = favicon(domainOf[src]); im.onerror = () => im.remove(); faces.append(im); });
+    who.append(faces, el("span", null, `${s.sources.size} אתרים מדווחים`));
+    b.append(who, el("div", "ht", lead.title.split("\n")[0]), el("div", "hm", `עודכן ${ago(s.items[0].ts)} · ${s.items.length} כתבות`));
+    b.onclick = () => {
+      ui.story = ui.story && ui.story.key === lead.link ? null
+        : { key: lead.link, title: lead.title.split("\n")[0], links: new Set(s.items.map(m => m.link)) };
+      ui.shown = PAGE; renderNews();
+      if (ui.story) $("storyBar").scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    return b;
+  }));
+}
+$("storyClear").onclick = () => { ui.story = null; renderNews(); };
+
 // ---------- telegram ----------
 function renderTg() {
   const q = $("tq").value.trim().toLowerCase();
+  hl = q;
   const items = data.items.filter(m => m.kind === "telegram" && (!ui.tgChan || m.source === ui.tgChan) && (!q || m.title.toLowerCase().includes(q)));
   const mk = (label, v) => { const b = el("button", "chip", label); b.setAttribute("aria-pressed", ui.tgChan === v); b.onclick = () => { ui.tgChan = v; ui.tgShown = PAGE; renderTg(); }; return b; };
   $("tgChan").replaceChildren(mk("כל הערוצים", ""), ...data.telegram.map(t => mk(t.name, t.name)));
@@ -651,6 +832,7 @@ function renderTg() {
 
 // ---------- saved ----------
 function renderSaved() {
+  hl = "";
   const items = Object.values(saved).sort((a, b) => b.ts - a.ts);
   $("cSaved").textContent = items.length;
   $("savedList").replaceChildren(...(items.length ? items.map(itemCard)
@@ -846,8 +1028,9 @@ function renderHeader() {
   $("greet").textContent = greeting();
   const s = data.status, busy = s.polling || (!s.last_poll && data.items.length === 0);
   $("sub").classList.toggle("busy", !!busy || refreshing);
+  // freshness first: on a narrow phone the date is what gets cut off, not "updated X ago"
   const date = new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
-  $("subText").textContent = `${date} · ` + (refreshing ? "מעדכנת..." : busy ? "אוספת כתבות..." : s.last_poll ? `עודכן ${ago(s.last_poll)}` : "");
+  $("subText").textContent = (refreshing ? "מעדכנת..." : busy ? "אוספת כתבות..." : s.last_poll ? `עודכן ${ago(s.last_poll)}` : "") + ` · ${date}`;
   const newsNew = newsBase().filter(m => m.found > lastSeen).length;
   const tgAll = data.items.filter(m => m.kind === "telegram"), tgNew = tgAll.filter(m => m.found > lastSeen).length;
   setCount("cNews", newsNew, newsBase().length); setCount("cTg", tgNew, tgAll.length);
@@ -866,7 +1049,7 @@ function setCount(id, fresh, total) {
   const c = $(id); c.textContent = fresh || total; c.classList.toggle("hot", fresh > 0); c.classList.toggle("quiet", !fresh);
   c.title = fresh ? "חדשות" : "סה\"כ";
 }
-function renderAll() { renderHeader(); renderNews(); renderTg(); renderSaved(); if (!$("tab-trends").hidden) renderTrends(); }
+function renderAll() { renderHeader(); setHeadH(); renderNews(); renderTg(); renderSaved(); if (!$("tab-trends").hidden) renderTrends(); }
 
 // ---------- tabs ----------
 function showTab(name) {
@@ -910,6 +1093,12 @@ $("resetFilters").onclick = () => {
 $("weak").onchange = renderAll;
 $("q").oninput = () => { ui.shown = PAGE; renderNews(); };
 $("tq").oninput = () => { ui.tgShown = PAGE; renderTg(); };
+$("newPill").onclick = () => { ui.onlyNew = !ui.onlyNew; ui.shown = PAGE; renderNews(); };
+$("topPill").onclick = () => {
+  const s = $("topPill").dataset.src; if (!s) return;
+  ui.source = ui.source === s ? "" : s; ui.shown = PAGE; renderNews();
+  $("chips").scrollIntoView({ behavior: "smooth", block: "start" });
+};
 $("markRead").onclick = () => { lastSeen = now(); localStorage.lastSeen = lastSeen; renderAll(); toast("הכל סומן כנקרא ✓"); };
 
 // ---------- notifications ----------
@@ -1003,10 +1192,91 @@ async function load(fresh = false) {
   data.sources.forEach(s => { groupOf[s.name] = s.group; domainOf[s.name] = s.domain; });
   data.telegram.forEach(t => groupOf[t.name] = "tg");
   const relevant = data.items.filter(m => m.hit);
+  const arrived = maxFound ? relevant.filter(m => m.found > maxFound && m.kind !== "telegram") : [];
   if (maxFound) notifyNew(relevant.filter(m => m.found > maxFound));
+  if (!maxFound && !localStorage.toured) setTimeout(showTour, 600);   // first time in: a short welcome
+  if (!maxFound) { document.querySelector("main").classList.add("anim"); setTimeout(() => document.querySelector("main").classList.remove("anim"), 1200); }
   maxFound = Math.max(maxFound, ...relevant.map(m => m.found), 1);
+  // don't move the list under her thumb: if she's scrolled down, offer the new items instead
+  if (arrived.length && scrollY > 400 && !$("tab-news").hidden) {
+    holdList = true; pendingNew += arrived.length;
+    $("newPillTop").textContent = `↑ ${pendingNew === 1 ? "כתבה חדשה" : `${pendingNew} כתבות חדשות`}`;
+    $("newPillTop").hidden = false;
+  }
   renderAll();
 }
+
+// ---------- "new articles" pill, back to top, pull to refresh ----------
+let holdList = false, pendingNew = 0;
+function releaseList() {
+  holdList = false; pendingNew = 0; $("newPillTop").hidden = true; renderNews();
+}
+$("newPillTop").onclick = () => { releaseList(); scrollTo({ top: 0, behavior: "smooth" }); };
+$("toTop").onclick = () => scrollTo({ top: 0, behavior: "smooth" });
+addEventListener("scroll", () => {
+  $("toTop").hidden = scrollY < 1400;
+  if (holdList && scrollY < 150) releaseList();
+  const compact = scrollY > 60, top = document.querySelector(".top");
+  if (compact !== top.classList.contains("compact")) { top.classList.toggle("compact", compact); setTimeout(setHeadH, 240); }
+}, { passive: true });
+
+// ---------- first-run intro ----------
+let tourAt = 0;
+function showTour() {
+  tourAt = 0; $("tour").hidden = false; moveTour();
+}
+function moveTour() {
+  $("tourSlides").style.transform = `translateX(${tourAt * 100}%)`;   // RTL: slides run right-to-left
+  [...$("tourDots").children].forEach((d, i) => d.classList.toggle("on", i === tourAt));
+  $("tourNext").textContent = tourAt === 2 ? "יאללה, מתחילות 💚" : "הבא";
+}
+function endTour() { $("tour").hidden = true; localStorage.toured = 1; }
+$("tourNext").onclick = () => { if (tourAt === 2) return endTour(); tourAt++; moveTour(); };
+$("tourSkip").onclick = endTour;
+$("tourAgain").onclick = () => { $("settingsSheet").hidden = true; showTour(); };
+
+// ---------- text size ----------
+function applyFont() {
+  const v = localStorage.fs || "1";
+  document.documentElement.style.setProperty("--fs", v);
+  $("fontSeg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v));
+}
+seg("fontSeg", v => { localStorage.fs = v; applyFont(); });
+applyFont();
+
+// ---------- offline ----------
+const syncOnline = () => { $("offline").hidden = navigator.onLine; };
+addEventListener("online", () => { syncOnline(); load(); });
+addEventListener("offline", syncOnline);
+syncOnline();
+
+// ---------- keyboard: "/" jumps to search (computer) ----------
+addEventListener("keydown", e => {
+  if (e.key !== "/" || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  e.preventDefault(); showTab("news"); $("q").focus(); $("q").scrollIntoView({ block: "center", behavior: "smooth" });
+});
+const setHeadH = () => document.documentElement.style.setProperty("--head-h", document.querySelector(".top").offsetHeight + "px");
+addEventListener("resize", setHeadH); setHeadH();
+
+let pullStart = null, pullDist = 0;
+addEventListener("touchstart", e => { pullStart = scrollY <= 0 && SHEETS.every(id => $(id).hidden) && $("lock").hidden ? e.touches[0].clientY : null; pullDist = 0; }, { passive: true });
+addEventListener("touchmove", e => {
+  if (pullStart == null) return;
+  pullDist = Math.max(0, Math.min(110, (e.touches[0].clientY - pullStart) * .5));
+  const p = $("ptr"); p.classList.remove("go");
+  p.style.setProperty("--pull", pullDist + "px"); p.style.setProperty("--pullr", pullDist * 3 + "deg"); p.style.setProperty("--pullo", Math.min(1, pullDist / 60));
+}, { passive: true });
+addEventListener("touchend", async () => {
+  if (pullStart == null) return;
+  const p = $("ptr"); pullStart = null;
+  if (pullDist > 70) {
+    p.classList.add("spin"); navigator.vibrate?.(8);
+    const before = maxFound; await load(true); releaseList();
+    p.classList.remove("spin");
+    toast(maxFound > before ? "עודכן, יש כתבות חדשות ✨" : "הכל מעודכן ✓");
+  }
+  p.classList.add("go"); p.style.setProperty("--pull", "0px"); p.style.setProperty("--pullo", 0);
+});
 
 // ---------- manual refresh ----------
 let refreshing = false;
